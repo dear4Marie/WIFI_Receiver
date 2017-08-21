@@ -36,16 +36,35 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textView3"
+        android:layout_alignStart="@+id/textView3"
+        android:layout_below="@+id/textView3"
+        android:text="CH4"
+        android:textColor="#444444"
+        android:textSize="20dp" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/layout_joystick2"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/layout_joystick2"
+        android:text="CH3"
+        android:textColor="#444444"
+        android:textSize="20dp" />
+
+    <TextView
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Y"
+        android:text="CH2"
         android:textColor="#444444"
         android:textSize="20dp"
-        android:layout_marginTop="8dp"
         android:layout_below="@+id/textView1"
-        android:layout_alignRight="@+id/textView1"
-        android:layout_alignEnd="@+id/textView1"
         android:layout_alignLeft="@+id/textView1"
         android:layout_alignStart="@+id/textView1" />
 
@@ -53,65 +72,22 @@
         android:id="@+id/textView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="X"
-        android:textColor="#444444"
-        android:textSize="20dp"
-        android:layout_alignParentTop="true"
         android:layout_alignLeft="@+id/linearLayout1"
+        android:layout_alignParentTop="true"
         android:layout_alignStart="@+id/linearLayout1"
-        android:layout_toLeftOf="@+id/textView5"
-        android:layout_toStartOf="@+id/textView5" />
-
-    <TextView
-        android:id="@+id/textView3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Angle"
+        android:text="CH1"
         android:textColor="#444444"
-        android:textSize="20dp"
-        android:layout_below="@+id/textView2"
-        android:layout_alignLeft="@+id/textView2"
-        android:layout_alignStart="@+id/textView2"
-        android:layout_marginTop="15dp"
-        android:layout_toLeftOf="@+id/textView5"
-        android:layout_toStartOf="@+id/textView5" />
+        android:textSize="20dp" />
 
-    <TextView
-        android:id="@+id/textView5"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Direction"
-        android:layout_alignBaseline="@+id/textView2"
-        android:layout_alignBottom="@+id/textView2"
-        android:layout_alignLeft="@+id/textView4"
-        android:layout_alignStart="@+id/textView4" />
-
-    <TextView
-        android:id="@+id/textView4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Distance"
-        android:layout_marginLeft="30dp"
-        android:layout_marginStart="30dp"
-        android:layout_alignBaseline="@+id/textView1"
-        android:layout_alignBottom="@+id/textView1"
-        android:layout_toRightOf="@+id/layout_joystick1" />
-
-    <TextView
-        android:text="X"
+    <ToggleButton
+        android:id="@+id/toggleButtonWifi"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/linearLayout1"
-        android:layout_alignLeft="@+id/layout_joystick2"
-        android:layout_alignStart="@+id/layout_joystick2"
-        android:id="@+id/textView6" />
+        android:layout_centerHorizontal="true"
+        android:checked="false"
+        android:text="WIFI"
+        android:textOff="WIFI Off"
+        android:textOn="WIFI On" />
 
-    <TextView
-        android:text="Y"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/textView5"
-        android:layout_toRightOf="@+id/textView6"
-        android:layout_toEndOf="@+id/textView6"
-        android:id="@+id/textView7" />
 </RelativeLayout>
