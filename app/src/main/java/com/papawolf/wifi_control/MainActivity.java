@@ -1,17 +1,30 @@
 package com.papawolf.wifi_control;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v4.net.ConnectivityManagerCompat;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnTouchListener;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.UnknownHostException;
+
+import static android.os.StrictMode.setThreadPolicy;
 import static com.papawolf.wifi_control.R.drawable.image_button;
 import static com.papawolf.wifi_control.R.layout.activity_main;
 
@@ -25,29 +38,101 @@ public class MainActivity extends AppCompatActivity {
     JoyStickClass js1;
     JoyStickClass js2;
 
+    private Socket apConnSocket = null;
+    private BufferedReader sockReader;
+    private BufferedWriter sockWriter;
+    private PrintWriter sockPrintWriter;
+    SocketThread thrSockConn;
+    String userPhone;
+   private  SocketAddress remoteAddr;
+
     // global channel position
     int ch1 = 0;
     int ch2 = 0;
     int ch3 = 0;
     int ch4 = 0;
 
+    final String ipaddr = "192.168.4.1";
+    final int ipport = 12345;
+    String sendMsg;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(activity_main);
 
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        setThreadPolicy(policy);
+
+        // WIFI 버튼으로 WIFI 처리
         final ToggleButton tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
 
         tbWifi.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v){
                 if (tbWifi.isChecked()) {
+                    try {
+                        apConnSocket = new Socket(ipaddr, ipport);
+                        System.out.println("SOCKET!! : " + apConnSocket);
+                    }
+                    catch (UnknownHostException ue) {
+                        System.out.println(ue);
+                        ue.printStackTrace();
+                        System.out.println("SOCKET!! : " + apConnSocket);
+                    } catch (IOException ie) {
+                        System.out.println(ie);
+                        ie.printStackTrace();
+                        System.out.println("SOCKET!! : " + apConnSocket);
+                    }
+
+                    sendMsg = "RECEIVER CONNECTED";
+                    sendServer(sendMsg);
+                    Toast.makeText(getApplicationContext(), sendMsg + " 전송", Toast.LENGTH_SHORT).show();
+
                     tbWifi.setTextColor(Color.GREEN);
                 }
                 else {
+                    try {
+                        apConnSocket.close();
+                        System.out.println("SOCKET!! : " + apConnSocket);
+                    }
+                    catch (UnknownHostException ue) {
+                        System.out.println(ue);
+                        ue.printStackTrace();
+                        System.out.println("SOCKET!! : " + apConnSocket);
+                    } catch (IOException ie) {
+                        System.out.println(ie);
+                        ie.printStackTrace();
+                        System.out.println("SOCKET!! : " + apConnSocket);
+                    }
+
                     tbWifi.setTextColor(Color.RED);
                 }
             }
+
         });
+
+        // 세팅버튼을 누르면 세팅화면으로
+//        Button btSetting = (Button) findViewById(R.id.btSetting);
+//        btSetting.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick (View v) {
+//                Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
+//                startActivity(intent);
+//            }
+//        });
+
+        thrSockConn = new SocketThread();
+        //thrSockConn.setDaemon(true);
+        thrSockConn.start();
+
+        if (apConnSocket != null && apConnSocket.isConnected())
+        {
+            Toast.makeText(getApplicationContext(), "서버 연결 성공", Toast.LENGTH_SHORT).show();
+        }
+        else
+        {
+            Toast.makeText(getApplicationContext(), "서버 연결 실패", Toast.LENGTH_SHORT).show();
+        }
 
         textView1 = (TextView)findViewById(R.id.textView1);
         textView2 = (TextView)findViewById(R.id.textView2);
@@ -66,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
         js1.setMinimumDistance(20);
         js1.setMaximumDistance(200);
 
-        layout_joystick1.setOnTouchListener(new OnTouchListener() {
+        layout_joystick1.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg0, MotionEvent arg1) {
                 js1.drawStick(arg1);
                 if(arg1.getAction() == MotionEvent.ACTION_DOWN
@@ -88,8 +173,7 @@ public class MainActivity extends AppCompatActivity {
                         ch2 = js1.getY();
                     }
 
-                    textView1.setText("CH1 : " + String.valueOf(ch1));
-                    textView2.setText("CH2 : " + String.valueOf(ch2));
+
                     //textView3.setText("Angle : " + String.valueOf(js1.getAngle()));
                     //textView4.setText("Distance : " + String.valueOf(js1.getDistance()));
 
@@ -114,12 +198,19 @@ public class MainActivity extends AppCompatActivity {
 //                        textView5.setText("Direction : Center");
 //                    }
                 } else if(arg1.getAction() == MotionEvent.ACTION_UP) {
-                    textView1.setText("CH1 :");
-                    textView2.setText("CH2 :");
+                    ch1 = 0;
+                    ch2 = 0;
                     //textView3.setText("Angle :");
                     //textView4.setText("Distance :");
                     //textView5.setText("Direction :");
                 }
+
+                textView1.setText("CH1 : " + String.valueOf(ch1));
+                textView2.setText("CH2 : " + String.valueOf(ch2));
+
+                sendMsg = ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
+                sendServer(sendMsg);
+
                 return true;
             }
         });
@@ -133,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
         js2.setMinimumDistance(20);
         js2.setMaximumDistance(200);
 
-        layout_joystick2.setOnTouchListener(new OnTouchListener() {
+        layout_joystick2.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg2, MotionEvent arg3) {
                 js2.drawStick(arg3);
 
@@ -156,17 +247,79 @@ public class MainActivity extends AppCompatActivity {
                         ch4 = js2.getY();
                     }
 
-                    textView3.setText("CH3 : " + String.valueOf(ch3));
-                    textView4.setText("CH4 : " + String.valueOf(ch4));
+
                 }
                 else if(arg3.getAction() == MotionEvent.ACTION_UP) {
-                    textView3.setText("CH3 :");
-                    textView4.setText("CH4 :");
+                    ch3 = 0;
+                    ch4 = 0;
                 }
+
+                sendMsg = ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
+                sendServer(sendMsg);
+
+                textView3.setText("CH3 : " + String.valueOf(ch3));
+                textView4.setText("CH4 : " + String.valueOf(ch4));
 
                 return true;
             }
         });
+    }
+
+    private void sendServer(String msg)
+    {
+        sockPrintWriter.println(msg);
+    }
+
+    private void SendMsgAlert()
+    {
+        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+
+        alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                if(apConnSocket.isConnected()) {
+                    try {
+                        apConnSocket.close();
+                    }catch(IOException ioe)
+                    {
+
+                    }
+                }
+                moveTaskToBack(true);
+                finish();
+                android.os.Process.killProcess(android.os.Process.myPid());
+
+            }
+
+        });
+
+        alert.setMessage("과도한 공지를 제한하기 위해 1회 발송 후 앱을 종료합니다.");
+        alert.show();
+    }
+
+    class SocketThread extends Thread {
+        public void run() {
+
+            try {
+                apConnSocket = new Socket(ipaddr, ipport);
+
+                sockWriter = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
+                sockReader = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
+                sockPrintWriter = new PrintWriter(sockWriter, true);
+
+                System.out.println("SOCKET!! : " + apConnSocket);
+            } catch (UnknownHostException ue) {
+                System.out.println("SOCKET!! : " + apConnSocket);
+                System.out.println(ue);
+                ue.printStackTrace();
+            } catch (IOException ie) {
+                System.out.println("SOCKET!! : " + apConnSocket);
+                System.out.println(ie);
+                ie.printStackTrace();
+            }
+        }
     }
 }
 

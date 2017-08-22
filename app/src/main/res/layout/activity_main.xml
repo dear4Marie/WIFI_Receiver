@@ -39,23 +39,23 @@
         android:id="@+id/textView4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/textView3"
-        android:layout_alignStart="@+id/textView3"
-        android:layout_below="@+id/textView3"
         android:text="CH4"
         android:textColor="#444444"
-        android:textSize="20dp" />
+        android:textSize="20dp"
+        android:layout_alignBottom="@+id/toggleButtonWifi"
+        android:layout_alignLeft="@+id/textView3"
+        android:layout_alignStart="@+id/textView3" />
 
     <TextView
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/layout_joystick2"
-        android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/layout_joystick2"
         android:text="CH3"
         android:textColor="#444444"
-        android:textSize="20dp" />
+        android:textSize="20dp"
+        android:layout_alignTop="@+id/toggleButtonWifi"
+        android:layout_alignLeft="@+id/layout_joystick2"
+        android:layout_alignStart="@+id/layout_joystick2" />
 
     <TextView
         android:id="@+id/textView2"
@@ -64,28 +64,27 @@
         android:text="CH2"
         android:textColor="#444444"
         android:textSize="20dp"
-        android:layout_below="@+id/textView1"
-        android:layout_alignLeft="@+id/textView1"
-        android:layout_alignStart="@+id/textView1" />
+        android:layout_alignBottom="@+id/toggleButtonWifi"
+        android:layout_alignLeft="@+id/linearLayout1"
+        android:layout_alignStart="@+id/linearLayout1" />
 
     <TextView
         android:id="@+id/textView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/linearLayout1"
-        android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/linearLayout1"
         android:text="CH1"
         android:textColor="#444444"
-        android:textSize="20dp" />
+        android:textSize="20dp"
+        android:layout_alignTop="@+id/linearLayout1"
+        android:layout_alignLeft="@+id/linearLayout1"
+        android:layout_alignStart="@+id/linearLayout1" />
 
     <ToggleButton
         android:id="@+id/toggleButtonWifi"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/linearLayout1"
+        android:layout_alignTop="@+id/textView1"
         android:layout_centerHorizontal="true"
-        android:checked="false"
         android:text="WIFI"
         android:textOff="WIFI Off"
         android:textOn="WIFI On" />
