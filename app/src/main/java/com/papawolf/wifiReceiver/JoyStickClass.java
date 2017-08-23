@@ -1,4 +1,4 @@
-package com.papawolf.wifi_control;
+package com.papawolf.wifiReceiver;
 
 import android.content.Context;
 import android.graphics.Bitmap;

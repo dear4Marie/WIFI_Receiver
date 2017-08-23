@@ -1,4 +1,4 @@
-package com.papawolf.wifi_control;
+package com.papawolf.wifiReceiver;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

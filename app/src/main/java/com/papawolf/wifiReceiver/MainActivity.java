@@ -1,7 +1,10 @@
-package com.papawolf.wifi_control;
+package com.papawolf.wifiReceiver;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -25,10 +28,12 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
 import static android.os.StrictMode.setThreadPolicy;
-import static com.papawolf.wifi_control.R.drawable.image_button;
-import static com.papawolf.wifi_control.R.layout.activity_main;
+import static com.papawolf.wifiReceiver.R.drawable.image_button;
+import static com.papawolf.wifiReceiver.R.layout.activity_main;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static boolean DEBUG = false;
 
     RelativeLayout layout_joystick1;
     RelativeLayout layout_joystick2;
@@ -64,6 +69,22 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         setThreadPolicy(policy);
 
+        // 디버그모드에 따라서 로그를 남기거나 남기지 않는다
+        this.DEBUG = isDebuggable(this);
+
+        thrSockConn = new SocketThread();
+        //thrSockConn.setDaemon(true);
+        thrSockConn.start();
+
+        if (apConnSocket != null && apConnSocket.isConnected())
+        {
+            Toast.makeText(getApplicationContext(), "서버 연결 성공", Toast.LENGTH_SHORT).show();
+        }
+        else
+        {
+            Toast.makeText(getApplicationContext(), "서버 연결 실패", Toast.LENGTH_SHORT).show();
+        }
+
         // WIFI 버튼으로 WIFI 처리
         final ToggleButton tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
 
@@ -77,11 +98,11 @@ public class MainActivity extends AppCompatActivity {
                     catch (UnknownHostException ue) {
                         System.out.println(ue);
                         ue.printStackTrace();
-                        System.out.println("SOCKET!! : " + apConnSocket);
+                        Dlog.d("SOCKET!! : " + apConnSocket);
                     } catch (IOException ie) {
                         System.out.println(ie);
                         ie.printStackTrace();
-                        System.out.println("SOCKET!! : " + apConnSocket);
+                        Dlog.d("SOCKET!! : " + apConnSocket);
                     }
 
                     sendMsg = "RECEIVER CONNECTED";
@@ -93,16 +114,16 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     try {
                         apConnSocket.close();
-                        System.out.println("SOCKET!! : " + apConnSocket);
+                        Dlog.d("SOCKET!! : " + apConnSocket);
                     }
                     catch (UnknownHostException ue) {
                         System.out.println(ue);
                         ue.printStackTrace();
-                        System.out.println("SOCKET!! : " + apConnSocket);
+                        Dlog.d("SOCKET!! : " + apConnSocket);
                     } catch (IOException ie) {
                         System.out.println(ie);
                         ie.printStackTrace();
-                        System.out.println("SOCKET!! : " + apConnSocket);
+                        Dlog.d("SOCKET!! : " + apConnSocket);
                     }
 
                     tbWifi.setTextColor(Color.RED);
@@ -120,19 +141,6 @@ public class MainActivity extends AppCompatActivity {
 //                startActivity(intent);
 //            }
 //        });
-
-        thrSockConn = new SocketThread();
-        //thrSockConn.setDaemon(true);
-        thrSockConn.start();
-
-        if (apConnSocket != null && apConnSocket.isConnected())
-        {
-            Toast.makeText(getApplicationContext(), "서버 연결 성공", Toast.LENGTH_SHORT).show();
-        }
-        else
-        {
-            Toast.makeText(getApplicationContext(), "서버 연결 실패", Toast.LENGTH_SHORT).show();
-        }
 
         textView1 = (TextView)findViewById(R.id.textView1);
         textView2 = (TextView)findViewById(R.id.textView2);
@@ -309,17 +317,37 @@ public class MainActivity extends AppCompatActivity {
                 sockReader = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
                 sockPrintWriter = new PrintWriter(sockWriter, true);
 
-                System.out.println("SOCKET!! : " + apConnSocket);
+                Dlog.d("SOCKET!! : " + apConnSocket);
             } catch (UnknownHostException ue) {
-                System.out.println("SOCKET!! : " + apConnSocket);
+                Dlog.d("SOCKET!! : " + apConnSocket);
                 System.out.println(ue);
                 ue.printStackTrace();
             } catch (IOException ie) {
-                System.out.println("SOCKET!! : " + apConnSocket);
+                Dlog.d("SOCKET!! : " + apConnSocket);
                 System.out.println(ie);
                 ie.printStackTrace();
             }
         }
+    }
+
+    /**
+     * get Debug mode
+     *
+     * @param context
+     * @return
+     */
+    private boolean isDebuggable(Context context) {
+        boolean debuggable = false;
+
+        PackageManager pm = context.getPackageManager();
+        try {
+            ApplicationInfo appinfo = pm.getApplicationInfo(context.getPackageName(), 0);
+            debuggable = (0 != (appinfo.flags & ApplicationInfo.FLAG_DEBUGGABLE));
+        } catch (PackageManager.NameNotFoundException e) {
+			/* debuggable variable will remain false */
+        }
+
+        return debuggable;
     }
 }
 

@@ -1,4 +1,4 @@
-package com.papawolf.wifi_control;
+package com.papawolf.wifiReceiver;
 
 import org.junit.Test;
 
