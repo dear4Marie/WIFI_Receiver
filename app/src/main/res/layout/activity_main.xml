@@ -32,16 +32,17 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:layout_margin="10dp"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        tools:ignore="RtlHardcoded">
     </LinearLayout>
 
     <TextView
         android:id="@+id/textView4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CH4"
+        android:text="@string/ch4"
         android:textColor="#444444"
-        android:textSize="20dp"
+        android:textSize="20sp"
         android:layout_alignBottom="@+id/toggleButtonWifi"
         android:layout_alignLeft="@+id/textView3"
         android:layout_alignStart="@+id/textView3" />
@@ -50,20 +51,20 @@
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CH3"
-        android:textColor="#444444"
-        android:textSize="20dp"
-        android:layout_alignTop="@+id/toggleButtonWifi"
         android:layout_alignLeft="@+id/layout_joystick2"
-        android:layout_alignStart="@+id/layout_joystick2" />
+        android:layout_alignStart="@+id/layout_joystick2"
+        android:layout_alignTop="@+id/toggleButtonWifi"
+        android:text="@string/ch3"
+        android:textColor="#444444"
+        android:textSize="20sp" />
 
     <TextView
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CH2"
+        android:text="@string/ch2"
         android:textColor="#444444"
-        android:textSize="20dp"
+        android:textSize="20sp"
         android:layout_alignBottom="@+id/toggleButtonWifi"
         android:layout_alignLeft="@+id/linearLayout1"
         android:layout_alignStart="@+id/linearLayout1" />
@@ -72,9 +73,9 @@
         android:id="@+id/textView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CH1"
+        android:text="@string/ch1"
         android:textColor="#444444"
-        android:textSize="20dp"
+        android:textSize="20sp"
         android:layout_alignTop="@+id/linearLayout1"
         android:layout_alignLeft="@+id/linearLayout1"
         android:layout_alignStart="@+id/linearLayout1" />
@@ -85,8 +86,8 @@
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/textView1"
         android:layout_centerHorizontal="true"
-        android:text="WIFI"
-        android:textOff="WIFI Off"
-        android:textOn="WIFI On" />
+        android:text="@string/wifi"
+        android:textOff="@string/wifi_off"
+        android:textOn="@string/wifi_on" />
 
 </RelativeLayout>
