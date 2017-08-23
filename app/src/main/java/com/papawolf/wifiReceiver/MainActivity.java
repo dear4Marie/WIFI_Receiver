@@ -7,6 +7,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
@@ -34,6 +35,7 @@ import static com.papawolf.wifiReceiver.R.layout.activity_main;
 public class MainActivity extends AppCompatActivity {
 
     public static boolean DEBUG = false;
+    Handler mHandler = null;
 
     RelativeLayout layout_joystick1;
     RelativeLayout layout_joystick2;
@@ -131,6 +133,29 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+
+        mHandler = new Handler();
+
+        Thread t = new Thread(new Runnable(){
+            @Override
+            public void run() {
+                // UI 작업 수행 X
+                mHandler.post(new Runnable(){
+                    @Override
+                    public void run() {
+                        if (apConnSocket != null && apConnSocket.isConnected())
+                        {
+                            tbWifi.setChecked(true);
+                        }
+                        else
+                        {
+                            tbWifi.setChecked(false);
+                        }
+                    }
+                });
+            }
+        });
+        t.start();
 
         // 세팅버튼을 누르면 세팅화면으로
 //        Button btSetting = (Button) findViewById(R.id.btSetting);
@@ -308,6 +333,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     class SocketThread extends Thread {
+        @Override
         public void run() {
 
             try {
