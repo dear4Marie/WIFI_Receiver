@@ -59,8 +59,8 @@ public class MainActivity extends AppCompatActivity {
     int ch3 = 0;
     int ch4 = 0;
 
-    final String ipaddr = "192.168.4.1";
-    final int ipport = 12345;
+    final String ipaddr = "192.168.0.1";
+    final int ipport = 80;
     String sendMsg;
 
     @Override
@@ -244,6 +244,8 @@ public class MainActivity extends AppCompatActivity {
                 sendMsg = ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
                 sendServer(sendMsg);
 
+                Dlog.d(sendMsg);
+
                 return true;
             }
         });
@@ -290,6 +292,8 @@ public class MainActivity extends AppCompatActivity {
                 sendMsg = ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
                 sendServer(sendMsg);
 
+                Dlog.d(sendMsg);
+
                 textView3.setText("CH3 : " + String.valueOf(ch3));
                 textView4.setText("CH4 : " + String.valueOf(ch4));
 
@@ -298,9 +302,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void sendServer(String msg)
-    {
-        sockPrintWriter.println(msg);
+    private void sendServer(String msg) {
+        if (apConnSocket.isConnected())
+            sockPrintWriter.println(msg);
     }
 
     private void SendMsgAlert()
