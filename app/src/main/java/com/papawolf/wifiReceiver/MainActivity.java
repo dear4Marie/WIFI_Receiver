@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.StrictMode;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -26,7 +27,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.UnknownHostException;
 
 import static android.os.StrictMode.setThreadPolicy;
 import static com.papawolf.wifiReceiver.R.drawable.image_button;
@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private BufferedReader sockReader;
     private BufferedWriter sockWriter;
     private PrintWriter sockPrintWriter;
-    SocketThread thrSockConn;
+    //SocketThread thrSockConn;
     String userPhone;
    private  SocketAddress remoteAddr;
 
@@ -59,8 +59,9 @@ public class MainActivity extends AppCompatActivity {
     int ch3 = 0;
     int ch4 = 0;
 
-    final String ipaddr = "192.168.0.1";
-    final int ipport = 80;
+    final String serverIp       = getString(R.string.server_ip);
+    final int    serverPort    = Integer.parseInt(getString(R.string.server_port));
+    final int    serverTimeout = Integer.parseInt(getString(R.string.server_timeout));
     String sendMsg;
 
     @Override
@@ -74,37 +75,34 @@ public class MainActivity extends AppCompatActivity {
         // 디버그모드에 따라서 로그를 남기거나 남기지 않는다
         this.DEBUG = isDebuggable(this);
 
-        thrSockConn = new SocketThread();
+        //thrSockConn = new SocketThread();
         //thrSockConn.setDaemon(true);
-        thrSockConn.start();
+        //thrSockConn.start();
 
-        if (apConnSocket != null && apConnSocket.isConnected())
-        {
-            Toast.makeText(getApplicationContext(), "서버 연결 성공", Toast.LENGTH_SHORT).show();
-        }
-        else
-        {
-            Toast.makeText(getApplicationContext(), "서버 연결 실패", Toast.LENGTH_SHORT).show();
-        }
+//        if (apConnSocket != null && apConnSocket.isConnected())
+//        {
+//            Toast.makeText(getApplicationContext(), "서버 연결 성공", Toast.LENGTH_SHORT).show();
+//        }
+//        else
+//        {
+//            Toast.makeText(getApplicationContext(), "서버 연결 실패", Toast.LENGTH_SHORT).show();
+//        }
 
         // WIFI 버튼으로 WIFI 처리
         final ToggleButton tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
 
         tbWifi.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v){
+
+            public void onClick(View v) {
+                // WIFI 연결시
                 if (tbWifi.isChecked()) {
                     try {
-                        apConnSocket = new Socket(ipaddr, ipport);
-                        System.out.println("SOCKET!! : " + apConnSocket);
+                        socketConnect();
                     }
-                    catch (UnknownHostException ue) {
-                        System.out.println(ue);
-                        ue.printStackTrace();
-                        Dlog.d("SOCKET!! : " + apConnSocket);
-                    } catch (IOException ie) {
-                        System.out.println(ie);
-                        ie.printStackTrace();
-                        Dlog.d("SOCKET!! : " + apConnSocket);
+                    catch (Exception e) {
+                        System.out.println(e);
+                        e.printStackTrace();
+                        Dlog.d("SOCKET!! : " + e);
                     }
 
                     sendMsg = "RECEIVER CONNECTED";
@@ -113,19 +111,15 @@ public class MainActivity extends AppCompatActivity {
 
                     tbWifi.setTextColor(Color.GREEN);
                 }
+                // WIFI 종료시
                 else {
                     try {
-                        apConnSocket.close();
-                        Dlog.d("SOCKET!! : " + apConnSocket);
+                        socketDisconnect();
                     }
-                    catch (UnknownHostException ue) {
-                        System.out.println(ue);
-                        ue.printStackTrace();
-                        Dlog.d("SOCKET!! : " + apConnSocket);
-                    } catch (IOException ie) {
-                        System.out.println(ie);
-                        ie.printStackTrace();
-                        Dlog.d("SOCKET!! : " + apConnSocket);
+                    catch (Exception e) {
+                        System.out.println(e);
+                        e.printStackTrace();
+                        Dlog.d("SOCKET!! : " + e);
                     }
 
                     tbWifi.setTextColor(Color.RED);
@@ -134,13 +128,14 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        // WIFI 접속 상태 UI반영
         mHandler = new Handler();
 
-        Thread t = new Thread(new Runnable(){
+        Thread t = new Thread (new Runnable() {
             @Override
             public void run() {
                 // UI 작업 수행 X
-                mHandler.post(new Runnable(){
+                mHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         if (apConnSocket != null && apConnSocket.isConnected())
@@ -155,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+
         t.start();
 
         // 세팅버튼을 누르면 세팅화면으로
@@ -167,6 +163,9 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
 
+        // 진동서비스 설정
+        final Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+
         textView1 = (TextView)findViewById(R.id.textView1);
         textView2 = (TextView)findViewById(R.id.textView2);
         textView3 = (TextView)findViewById(R.id.textView3);
@@ -175,19 +174,20 @@ public class MainActivity extends AppCompatActivity {
         layout_joystick1 = (RelativeLayout)findViewById(R.id.layout_joystick1);
         layout_joystick2 = (RelativeLayout)findViewById(R.id.layout_joystick2);
 
+        // 1번 조이스틱 설정
         js1 = new JoyStickClass(getApplicationContext(), layout_joystick1, image_button);
         js1.setStickSize(150, 150);
-        js1.setLayoutSize(500, 500);
-        js1.setLayoutAlpha(150);
+        js1.setLayoutSize(800, 800);
+        js1.setLayoutAlpha(50);
         js1.setStickAlpha(100);
         js1.setOffset(90);
         js1.setMinimumDistance(20);
-        js1.setMaximumDistance(200);
+        js1.setMaximumDistance(300);
 
         layout_joystick1.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg0, MotionEvent arg1) {
                 js1.drawStick(arg1);
-                if(arg1.getAction() == MotionEvent.ACTION_DOWN
+                if (arg1.getAction() == MotionEvent.ACTION_DOWN
                         || arg1.getAction() == MotionEvent.ACTION_MOVE) {
 
                     if (js1.getX() >= js1.getMaximumDistance()) {
@@ -205,6 +205,7 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         ch2 = js1.getY();
                     }
+
 
 
                     //textView3.setText("Angle : " + String.valueOf(js1.getAngle()));
@@ -238,26 +239,29 @@ public class MainActivity extends AppCompatActivity {
                     //textView5.setText("Direction :");
                 }
 
+                if (arg1.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(100);
+
                 textView1.setText("CH1 : " + String.valueOf(ch1));
                 textView2.setText("CH2 : " + String.valueOf(ch2));
 
-                sendMsg = ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
+                sendMsg = ":CH:" + ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
                 sendServer(sendMsg);
 
-                Dlog.d(sendMsg);
+                //Dlog.d(sendMsg);
 
                 return true;
             }
         });
 
+        // 2번 조이스틱 설정
         js2 = new JoyStickClass(getApplicationContext(), layout_joystick2, image_button);
         js2.setStickSize(150, 150);
-        js2.setLayoutSize(500, 500);
+        js2.setLayoutSize(800, 800);
         js2.setLayoutAlpha(150);
         js2.setStickAlpha(100);
         js2.setOffset(90);
         js2.setMinimumDistance(20);
-        js2.setMaximumDistance(200);
+        js2.setMaximumDistance(300);
 
         layout_joystick2.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg2, MotionEvent arg3) {
@@ -281,18 +285,18 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         ch4 = js2.getY();
                     }
-
-
                 }
                 else if(arg3.getAction() == MotionEvent.ACTION_UP) {
                     ch3 = 0;
                     ch4 = 0;
                 }
 
-                sendMsg = ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
+                if (arg3.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(100);
+
+                sendMsg = ":CH:" + ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
                 sendServer(sendMsg);
 
-                Dlog.d(sendMsg);
+                //Dlog.d(sendMsg);
 
                 textView3.setText("CH3 : " + String.valueOf(ch3));
                 textView4.setText("CH4 : " + String.valueOf(ch4));
@@ -302,9 +306,17 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // 소켓전송
     private void sendServer(String msg) {
-        if (apConnSocket.isConnected())
-            sockPrintWriter.println(msg);
+        if (apConnSocket != null && apConnSocket.isConnected()) {
+
+            try {
+                sockPrintWriter.println(msg);
+                Dlog.i(sendMsg);
+            } catch (Exception e) {
+                Dlog.e("DATA SEND ERROR");
+            }
+        }
     }
 
     private void SendMsgAlert()
@@ -336,27 +348,60 @@ public class MainActivity extends AppCompatActivity {
         alert.show();
     }
 
-    class SocketThread extends Thread {
-        @Override
-        public void run() {
+    // 소켓연결
+//    class SocketThread extends Thread {
+//        @Override
+//        public void run() {
+//
+//            try {
+//                apConnSocket = new Socket(ipaddr, ipport);
+//
+//                sockWriter = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
+//                sockReader = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
+//                sockPrintWriter = new PrintWriter(sockWriter, true);
+//
+//                Dlog.d("SOCKET!! : " + apConnSocket);
+//            } catch (UnknownHostException ue) {
+//                Dlog.d("SOCKET!! : " + apConnSocket);
+//                System.out.println(ue);
+//                ue.printStackTrace();
+//            } catch (IOException ie) {
+//                Dlog.d("SOCKET!! : " + apConnSocket);
+//                System.out.println(ie);
+//                ie.printStackTrace();
+//            }
+//        }
+//    }
 
-            try {
-                apConnSocket = new Socket(ipaddr, ipport);
+    private void socketConnect() {
+        try {
+            apConnSocket = new Socket(serverIp, serverPort);
+            apConnSocket.setSoTimeout(serverTimeout);
+            sockWriter = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
+            sockReader = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
+            sockPrintWriter = new PrintWriter(sockWriter, true);
 
-                sockWriter = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
-                sockReader = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
-                sockPrintWriter = new PrintWriter(sockWriter, true);
+            Dlog.d("SOCKET!! : " + apConnSocket);
+        } catch (Exception e) {
+            Dlog.e("SOCKET!! : " + apConnSocket);
+            System.out.println(e);
+            e.printStackTrace();
+        }
+    }
 
-                Dlog.d("SOCKET!! : " + apConnSocket);
-            } catch (UnknownHostException ue) {
-                Dlog.d("SOCKET!! : " + apConnSocket);
-                System.out.println(ue);
-                ue.printStackTrace();
-            } catch (IOException ie) {
-                Dlog.d("SOCKET!! : " + apConnSocket);
-                System.out.println(ie);
-                ie.printStackTrace();
+    private void socketDisconnect() {
+        try {
+            if (apConnSocket != null) {
+                sendMsg = ":EXIT:";
+                sendServer(sendMsg);
+                apConnSocket.close();
+                apConnSocket = null;
             }
+            Dlog.d("SOCKET!! : " + apConnSocket);
+        } catch (Exception e) {
+            Dlog.e("SOCKET!! : " + apConnSocket);
+            System.out.println(e);
+            e.printStackTrace();
         }
     }
 

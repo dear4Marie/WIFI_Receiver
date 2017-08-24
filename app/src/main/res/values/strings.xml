@@ -8,4 +8,7 @@
     <string name="wifi_off">WIFI Off</string>
     <string name="wifi_on">WIFI On</string>
     <string name="wifi">WIFI</string>
+    <string name="server_ip">192.168.4.1</string>
+    <string name="server_port">12345</string>
+    <string name="server_timeout">1500</string>
 </resources>
