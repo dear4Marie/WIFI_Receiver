@@ -3,9 +3,14 @@ package com.papawolf.wifiReceiver;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.StrictMode;
@@ -13,7 +18,6 @@ import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,8 +29,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 
 import static android.os.StrictMode.setThreadPolicy;
 import static com.papawolf.wifiReceiver.R.drawable.image_button;
@@ -35,38 +41,54 @@ import static com.papawolf.wifiReceiver.R.layout.activity_main;
 public class MainActivity extends AppCompatActivity {
 
     public static boolean DEBUG = false;
+
     Handler mHandler = null;
 
     RelativeLayout layout_joystick1;
     RelativeLayout layout_joystick2;
-    ImageView image_joystick, image_border;
-    TextView textView1, textView2, textView3, textView4, textView5, textView6, textView7;
+    TextView textView1, textView2, textView3, textView4;
 
     JoyStickClass js1;
     JoyStickClass js2;
 
-    private Socket apConnSocket = null;
+    private Socket         apConnSocket = null;
     private BufferedReader sockReader;
     private BufferedWriter sockWriter;
-    private PrintWriter sockPrintWriter;
-    //SocketThread thrSockConn;
-    String userPhone;
-   private  SocketAddress remoteAddr;
+    private PrintWriter    sockPrintWriter;
 
-    // global channel position
+    // Global channel position
     int ch1 = 0;
     int ch2 = 0;
     int ch3 = 0;
     int ch4 = 0;
 
-    final String serverIp       = getString(R.string.server_ip);
-    final int    serverPort    = Integer.parseInt(getString(R.string.server_port));
-    final int    serverTimeout = Integer.parseInt(getString(R.string.server_timeout));
     String sendMsg;
+
+    //Using the Accelometer & Gyroscoper
+    SensorManager mSensorManager = null;
+
+    //Using the Gyroscope
+    SensorEventListener mGyroLis;
+    Sensor mGgyroSensor = null;
+
+    //Roll and Pitch
+    double pitch;
+    double roll;
+    double yaw;
+
+    //timestamp and dt
+    double timestamp;
+    double dt;
+
+    // for radian -> dgree
+    double RAD2DGR = 180 / Math.PI;
+    final float NS2S = 1.0f/1000000000.0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(activity_main);
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -74,19 +96,6 @@ public class MainActivity extends AppCompatActivity {
 
         // 디버그모드에 따라서 로그를 남기거나 남기지 않는다
         this.DEBUG = isDebuggable(this);
-
-        //thrSockConn = new SocketThread();
-        //thrSockConn.setDaemon(true);
-        //thrSockConn.start();
-
-//        if (apConnSocket != null && apConnSocket.isConnected())
-//        {
-//            Toast.makeText(getApplicationContext(), "서버 연결 성공", Toast.LENGTH_SHORT).show();
-//        }
-//        else
-//        {
-//            Toast.makeText(getApplicationContext(), "서버 연결 실패", Toast.LENGTH_SHORT).show();
-//        }
 
         // WIFI 버튼으로 WIFI 처리
         final ToggleButton tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
@@ -105,11 +114,17 @@ public class MainActivity extends AppCompatActivity {
                         Dlog.d("SOCKET!! : " + e);
                     }
 
-                    sendMsg = "RECEIVER CONNECTED";
-                    sendServer(sendMsg);
-                    Toast.makeText(getApplicationContext(), sendMsg + " 전송", Toast.LENGTH_SHORT).show();
+                    if (apConnSocket != null && apConnSocket.isConnected()) {
+                        sendMsg = getResources().getString(R.string.msg_conn_succ);
+                        sendServer(sendMsg);
+                        Toast.makeText(getApplicationContext(), sendMsg + " 전송", Toast.LENGTH_SHORT).show();
 
-                    tbWifi.setTextColor(Color.GREEN);
+                        tbWifi.setTextColor(Color.GREEN);
+                    } else {
+                        tbWifi.setChecked(false);
+
+                        Toast.makeText(getApplicationContext(), getResources().getString(R.string.msg_conn_fail), Toast.LENGTH_SHORT).show();
+                    }
                 }
                 // WIFI 종료시
                 else {
@@ -131,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
         // WIFI 접속 상태 UI반영
         mHandler = new Handler();
 
-        Thread t = new Thread (new Runnable() {
+        Thread threadWifiCheck = new Thread (new Runnable() {
             @Override
             public void run() {
                 // UI 작업 수행 X
@@ -140,10 +155,12 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         if (apConnSocket != null && apConnSocket.isConnected())
                         {
+                            Dlog.i("SOCKET!! : " + apConnSocket);
                             tbWifi.setChecked(true);
                         }
                         else
                         {
+                            Dlog.i("SOCKET!! : " + apConnSocket);
                             tbWifi.setChecked(false);
                         }
                     }
@@ -151,7 +168,51 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        t.start();
+        threadWifiCheck.start();
+
+        //Using the Gyroscope & Accelometer
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        //Using the Accelometer
+        mGgyroSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        mGyroLis = new GyroscopeListener();
+
+        // GYTO 버튼으로 GyroScope 처리
+        final ToggleButton tbGyro = (ToggleButton) this.findViewById(R.id.toggleButtonGyro);
+
+        tbGyro.setOnClickListener(new View.OnClickListener() {
+
+            public void onClick(View v) {
+                // GyroScope 연결시
+                if (tbGyro.isChecked()) {
+
+                    Dlog.d("GyroscopeListener on");
+
+                    dt = 0.0;
+                    timestamp = 0.0;
+
+                    try {
+                        mSensorManager.registerListener(mGyroLis, mGgyroSensor, SensorManager.SENSOR_DELAY_FASTEST);
+                        tbGyro.setTextColor(Color.GREEN);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else { // GyroScope 종료시
+
+                    Dlog.d("GyroscopeListener off");
+
+                    try {
+                        mSensorManager.unregisterListener(mGyroLis);
+                        tbGyro.setTextColor(Color.RED);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
+            }
+        });
 
         // 세팅버튼을 누르면 세팅화면으로
 //        Button btSetting = (Button) findViewById(R.id.btSetting);
@@ -176,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 1번 조이스틱 설정
         js1 = new JoyStickClass(getApplicationContext(), layout_joystick1, image_button);
-        js1.setStickSize(150, 150);
+        js1.setStickSize(200, 200);
         js1.setLayoutSize(800, 800);
         js1.setLayoutAlpha(50);
         js1.setStickAlpha(100);
@@ -184,9 +245,18 @@ public class MainActivity extends AppCompatActivity {
         js1.setMinimumDistance(20);
         js1.setMaximumDistance(300);
 
+
+
         layout_joystick1.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg0, MotionEvent arg1) {
-                js1.drawStick(arg1);
+                // Gyro 사용 중 1번째 조이스틱 비활성화
+                if (tbGyro.isChecked()) {
+                    js1.setStickAlpha(0);
+                } else {
+                    js1.drawStick(arg1);
+                    js1.setStickAlpha(100);
+                }
+
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN
                         || arg1.getAction() == MotionEvent.ACTION_MOVE) {
 
@@ -205,38 +275,9 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         ch2 = js1.getY();
                     }
-
-
-
-                    //textView3.setText("Angle : " + String.valueOf(js1.getAngle()));
-                    //textView4.setText("Distance : " + String.valueOf(js1.getDistance()));
-
-//                    int direction = js1.get8Direction();
-//                    if(direction == JoyStickClass.STICK_UP) {
-//                        textView5.setText("Direction : Up");
-//                    } else if(direction == JoyStickClass.STICK_UPRIGHT) {
-//                        textView5.setText("Direction : Up Right");
-//                    } else if(direction == JoyStickClass.STICK_RIGHT) {
-//                        textView5.setText("Direction : Right");
-//                    } else if(direction == JoyStickClass.STICK_DOWNRIGHT) {
-//                        textView5.setText("Direction : Down Right");
-//                    } else if(direction == JoyStickClass.STICK_DOWN) {
-//                        textView5.setText("Direction : Down");
-//                    } else if(direction == JoyStickClass.STICK_DOWNLEFT) {
-//                        textView5.setText("Direction : Down Left");
-//                    } else if(direction == JoyStickClass.STICK_LEFT) {
-//                        textView5.setText("Direction : Left");
-//                    } else if(direction == JoyStickClass.STICK_UPLEFT) {
-//                        textView5.setText("Direction : Up Left");
-//                    } else if(direction == JoyStickClass.STICK_NONE) {
-//                        textView5.setText("Direction : Center");
-//                    }
                 } else if(arg1.getAction() == MotionEvent.ACTION_UP) {
                     ch1 = 0;
                     ch2 = 0;
-                    //textView3.setText("Angle :");
-                    //textView4.setText("Distance :");
-                    //textView5.setText("Direction :");
                 }
 
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(100);
@@ -255,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 2번 조이스틱 설정
         js2 = new JoyStickClass(getApplicationContext(), layout_joystick2, image_button);
-        js2.setStickSize(150, 150);
+        js2.setStickSize(200, 200);
         js2.setLayoutSize(800, 800);
         js2.setLayoutAlpha(150);
         js2.setStickAlpha(100);
@@ -307,7 +348,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 소켓전송
-    private void sendServer(String msg) {
+    public void sendServer(String msg) {
         if (apConnSocket != null && apConnSocket.isConnected()) {
 
             try {
@@ -374,18 +415,40 @@ public class MainActivity extends AppCompatActivity {
 //    }
 
     private void socketConnect() {
+
+        final String serverIp      = this.getApplication().getString(R.string.server_ip);
+        final int    serverPort    = Integer.parseInt(this.getApplication().getString(R.string.server_port));
+        final int    serverTimeout = Integer.parseInt(this.getApplication().getString(R.string.server_timeout));
+
+        Dlog.d("SOCKET Connect start!!");
+
+        SocketAddress socketAddress = new InetSocketAddress(serverIp, serverPort);
+
+        apConnSocket = new Socket();
+
         try {
-            apConnSocket = new Socket(serverIp, serverPort);
             apConnSocket.setSoTimeout(serverTimeout);
-            sockWriter = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
-            sockReader = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
+            apConnSocket.connect(socketAddress, serverTimeout);
+
+            sockWriter      = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
+            sockReader      = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
             sockPrintWriter = new PrintWriter(sockWriter, true);
 
             Dlog.d("SOCKET!! : " + apConnSocket);
-        } catch (Exception e) {
-            Dlog.e("SOCKET!! : " + apConnSocket);
-            System.out.println(e);
+        } catch (SocketException e) {
             e.printStackTrace();
+            apConnSocket = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            apConnSocket = null;
+        } finally {
+            try {
+                apConnSocket.close();
+                apConnSocket = null;
+            } catch (IOException e) {
+                e.printStackTrace();
+                apConnSocket = null;
+            }
         }
     }
 
@@ -423,6 +486,58 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return debuggable;
+    }
+
+    public class GyroscopeListener implements SensorEventListener {
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+
+        /* 각 축의 각속도 성분을 받는다. */
+            double gyroX = event.values[0];
+            double gyroY = event.values[1];
+            double gyroZ = event.values[2];
+
+        /* 각속도를 적분하여 회전각을 추출하기 위해 적분 간격(dt)을 구한다.
+         * dt : 센서가 현재 상태를 감지하는 시간 간격
+         * NS2S : nano second -> second */
+            dt = (event.timestamp - timestamp) * NS2S;
+            timestamp = event.timestamp;
+
+        /* 맨 센서 인식을 활성화 하여 처음 timestamp가 0일때는 dt값이 올바르지 않으므로 넘어간다. */
+            if (dt - timestamp * NS2S != 0) {
+
+            /* 각속도 성분을 적분 -> 회전각(pitch, roll)으로 변환.
+             * 여기까지의 pitch, roll의 단위는 '라디안'이다.
+             * SO 아래 로그 출력부분에서 멤버변수 'RAD2DGR'를 곱해주어 degree로 변환해줌.  */
+                pitch = pitch + gyroY * dt;
+                roll  = roll  + gyroX * dt;
+                yaw   = yaw   + gyroZ * dt;
+
+                ch1 = (int) (pitch * RAD2DGR);
+                ch2 = (int) (roll  * RAD2DGR);
+
+                textView1.setText("CH1 : " + String.valueOf(ch1));
+                textView2.setText("CH2 : " + String.valueOf(ch2));
+
+            Dlog.d("GYROSCOPE     [X]    : " + String.format("%.4f", event.values[0])
+                    + "           [Y]    : " + String.format("%.4f", event.values[1])
+                    + "           [dt]   : " + String.format("%.4f", dt));
+//            Dlog.e("GYROSCOPE     [X]    : " + String.format("%.4f", event.values[0])
+//                    + "           [Y]    : " + String.format("%.4f", event.values[1])
+//                    + "           [Z]    : " + String.format("%.4f", event.values[2])
+//                    + "           [Pitch]: " + String.format("%.1f", pitch * RAD2DGR)
+//                    + "           [Roll] : " + String.format("%.1f", roll * RAD2DGR)
+//                    + "           [Yaw]  : " + String.format("%.1f", yaw * RAD2DGR)
+//                    + "           [dt]   : " + String.format("%.4f", dt));
+
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
     }
 }
 

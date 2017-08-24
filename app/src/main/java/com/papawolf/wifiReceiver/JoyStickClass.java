@@ -86,8 +86,13 @@ public class JoyStickClass {
                 mLayout.removeView(draw);
             }
         } else if(arg1.getAction() == MotionEvent.ACTION_UP) {
-            mLayout.removeView(draw);
+            //mLayout.removeView(draw);
+            draw.position(params.width / 2, params.height / 2);
+            draw();
             touch_state = false;
+        } else {
+            draw.position(params.width / 2, params.height / 2);
+            draw();
         }
     }
 

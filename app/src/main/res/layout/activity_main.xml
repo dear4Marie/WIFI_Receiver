@@ -83,10 +83,22 @@
         android:id="@+id/toggleButtonWifi"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/toggleButtonGyro"
+        android:layout_alignStart="@+id/toggleButtonGyro"
         android:layout_alignTop="@+id/textView1"
-        android:layout_centerHorizontal="true"
         android:text="@string/wifi"
         android:textOff="@string/wifi_off"
         android:textOn="@string/wifi_on" />
+
+    <ToggleButton
+        android:id="@+id/toggleButtonGyro"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textView4"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:text="@string/gyro"
+        android:textOff="@string/gyro_off"
+        android:textOn="@string/gyro_on" />
 
 </RelativeLayout>

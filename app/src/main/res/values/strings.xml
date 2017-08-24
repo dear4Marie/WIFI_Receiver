@@ -8,7 +8,13 @@
     <string name="wifi_off">WIFI Off</string>
     <string name="wifi_on">WIFI On</string>
     <string name="wifi">WIFI</string>
+    <string name="gyro_off">GYRO Off</string>
+    <string name="gyro_on">GYRO On</string>
+    <string name="gyro">gyro</string>
     <string name="server_ip">192.168.4.1</string>
     <string name="server_port">12345</string>
-    <string name="server_timeout">1500</string>
+    <string name="server_timeout">5000</string>
+    <string name="msg_conn_succ">WIFI RECEIVER Connected</string>
+    <string name="msg_conn_fail">WIFI RECEIVER NOT Connected</string>
+
 </resources>
