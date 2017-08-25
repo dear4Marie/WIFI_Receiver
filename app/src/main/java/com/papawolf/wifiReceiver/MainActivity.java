@@ -13,6 +13,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.os.StrictMode;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
@@ -42,8 +43,6 @@ public class MainActivity extends AppCompatActivity {
 
     public static boolean DEBUG = false;
 
-    Handler mHandler = null;
-
     RelativeLayout layout_joystick1;
     RelativeLayout layout_joystick2;
     TextView textView1, textView2, textView3, textView4;
@@ -51,10 +50,12 @@ public class MainActivity extends AppCompatActivity {
     JoyStickClass js1;
     JoyStickClass js2;
 
-    private Socket         apConnSocket = null;
-    private BufferedReader sockReader;
-    private BufferedWriter sockWriter;
-    private PrintWriter    sockPrintWriter;
+    ToggleButton tbWifi;
+
+    Socket         apConnSocket = null;
+    BufferedReader sockReader;
+    BufferedWriter sockWriter;
+    PrintWriter    sockPrintWriter;
 
     // Global channel position
     int ch1 = 0;
@@ -64,25 +65,30 @@ public class MainActivity extends AppCompatActivity {
 
     String sendMsg;
 
-    //Using the Accelometer & Gyroscoper
-    SensorManager mSensorManager = null;
+    // Using the Accelometer & Gyroscoper
+    private SensorManager mSensorManager = null;
+    private SensorEventListener mSensorListener;
+    private Sensor mAccSensor  = null;
+    private Sensor mGyroSensor = null;
 
-    //Using the Gyroscope
-    SensorEventListener mGyroLis;
-    Sensor mGgyroSensor = null;
+    // Sensor variables
+    private float[] mGyroValues = new float[3];
+    private float[] mAccValues = new float[3];
+    private double mAccPitch, mAccRoll;
 
-    //Roll and Pitch
-    double pitch;
-    double roll;
-    double yaw;
+    // for unsing complementary fliter
+    private float a = 0.2f;
+    private static final float NS2S = 1.0f/1000000000.0f;
+    private double pitch = 0, roll = 0;
+    private double timestamp;
+    private double dt;
+    private double temp;
+    private boolean running;
+    private boolean gyroRunning;
+    private boolean accRunning;
 
-    //timestamp and dt
-    double timestamp;
-    double dt;
-
-    // for radian -> dgree
-    double RAD2DGR = 180 / Math.PI;
-    final float NS2S = 1.0f/1000000000.0f;
+    private KalmanFilter mKalmanAccX;
+    private KalmanFilter mKalmanAccY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,8 +103,13 @@ public class MainActivity extends AppCompatActivity {
         // 디버그모드에 따라서 로그를 남기거나 남기지 않는다
         this.DEBUG = isDebuggable(this);
 
+        //칼만필터 초기화
+        mKalmanAccX = new KalmanFilter(0.0f);
+        mKalmanAccY = new KalmanFilter(0.0f);
+
+
         // WIFI 버튼으로 WIFI 처리
-        final ToggleButton tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
+        tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
 
         tbWifi.setOnClickListener(new View.OnClickListener() {
 
@@ -107,12 +118,12 @@ public class MainActivity extends AppCompatActivity {
                 if (tbWifi.isChecked()) {
                     try {
                         socketConnect();
+                        mHandler.sendEmptyMessage(0);
                     }
                     catch (Exception e) {
-                        System.out.println(e);
                         e.printStackTrace();
-                        Dlog.d("SOCKET!! : " + e);
                     }
+                    Dlog.d("SOCKET!! : " + apConnSocket);
 
                     if (apConnSocket != null && apConnSocket.isConnected()) {
                         sendMsg = getResources().getString(R.string.msg_conn_succ);
@@ -130,9 +141,9 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     try {
                         socketDisconnect();
+                        mHandler.removeMessages(0);
                     }
                     catch (Exception e) {
-                        System.out.println(e);
                         e.printStackTrace();
                         Dlog.d("SOCKET!! : " + e);
                     }
@@ -143,39 +154,45 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-        // WIFI 접속 상태 UI반영
-        mHandler = new Handler();
 
-        Thread threadWifiCheck = new Thread (new Runnable() {
-            @Override
-            public void run() {
-                // UI 작업 수행 X
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (apConnSocket != null && apConnSocket.isConnected())
-                        {
-                            Dlog.i("SOCKET!! : " + apConnSocket);
-                            tbWifi.setChecked(true);
-                        }
-                        else
-                        {
-                            Dlog.i("SOCKET!! : " + apConnSocket);
-                            tbWifi.setChecked(false);
-                        }
-                    }
-                });
-            }
-        });
 
-        threadWifiCheck.start();
+//        Thread threadWifiCheck = new Thread (new Runnable() {
+//            @Override
+//            public void run() {
+//                // UI 작업 수행 X
+//                mHandler.post(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        while (true) {
+//                            try {
+//                                if (apConnSocket != null && apConnSocket.isConnected()) {
+//                                    Dlog.i("SOCKET!! : " + apConnSocket);
+//                                    tbWifi.setChecked(true);
+//                                } else {
+//                                    Dlog.i("SOCKET!! : " + apConnSocket);
+//                                    tbWifi.setChecked(false);
+//                                }
+//
+//                                Thread.sleep(1000);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }
+//                });
+//            }
+//        });
+
+//        threadWifiCheck.setPriority(Thread.MAX_PRIORITY);
+//        threadWifiCheck.setDaemon(true);
+//        threadWifiCheck.start();
 
         //Using the Gyroscope & Accelometer
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
-        //Using the Accelometer
-        mGgyroSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        mGyroLis = new GyroscopeListener();
+        mGyroSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        mAccSensor  = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mSensorListener = new SensorListener();
 
         // GYTO 버튼으로 GyroScope 처리
         final ToggleButton tbGyro = (ToggleButton) this.findViewById(R.id.toggleButtonGyro);
@@ -188,11 +205,9 @@ public class MainActivity extends AppCompatActivity {
 
                     Dlog.d("GyroscopeListener on");
 
-                    dt = 0.0;
-                    timestamp = 0.0;
-
                     try {
-                        mSensorManager.registerListener(mGyroLis, mGgyroSensor, SensorManager.SENSOR_DELAY_FASTEST);
+                        mSensorManager.registerListener(mSensorListener, mAccSensor, SensorManager.SENSOR_DELAY_GAME);
+                        mSensorManager.registerListener(mSensorListener, mGyroSensor, SensorManager.SENSOR_DELAY_GAME);
                         tbGyro.setTextColor(Color.GREEN);
 
                     } catch (Exception e) {
@@ -203,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
                     Dlog.d("GyroscopeListener off");
 
                     try {
-                        mSensorManager.unregisterListener(mGyroLis);
+                        mSensorManager.unregisterListener(mSensorListener);
                         tbGyro.setTextColor(Color.RED);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -259,7 +274,6 @@ public class MainActivity extends AppCompatActivity {
 
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN
                         || arg1.getAction() == MotionEvent.ACTION_MOVE) {
-
                     if (js1.getX() >= js1.getMaximumDistance()) {
                         ch1 = js1.getMaximumDistance();
                     } else if (js1.getX() <= js1.getMaximumDistance() * (-1)) {
@@ -369,11 +383,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                if(apConnSocket.isConnected()) {
+                if (apConnSocket.isConnected()) {
                     try {
                         apConnSocket.close();
-                    }catch(IOException ioe)
-                    {
+                    } catch (IOException ioe) {
 
                     }
                 }
@@ -427,6 +440,7 @@ public class MainActivity extends AppCompatActivity {
         apConnSocket = new Socket();
 
         try {
+            //apConnSocket = new Socket(serverIp, serverPort);
             apConnSocket.setSoTimeout(serverTimeout);
             apConnSocket.connect(socketAddress, serverTimeout);
 
@@ -434,21 +448,13 @@ public class MainActivity extends AppCompatActivity {
             sockReader      = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
             sockPrintWriter = new PrintWriter(sockWriter, true);
 
-            Dlog.d("SOCKET!! : " + apConnSocket);
+            Dlog.d("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
         } catch (SocketException e) {
             e.printStackTrace();
             apConnSocket = null;
         } catch (IOException e) {
             e.printStackTrace();
             apConnSocket = null;
-        } finally {
-            try {
-                apConnSocket.close();
-                apConnSocket = null;
-            } catch (IOException e) {
-                e.printStackTrace();
-                apConnSocket = null;
-            }
         }
     }
 
@@ -459,7 +465,18 @@ public class MainActivity extends AppCompatActivity {
                 sendServer(sendMsg);
                 apConnSocket.close();
                 apConnSocket = null;
+                sockWriter.close();
+                sockReader.close();
+                sockPrintWriter.close();
+
+                sockWriter = null;
+                sockReader = null;
+                sockPrintWriter = null;
+
+                tbWifi.setChecked(false);
+                tbWifi.setTextColor(Color.GREEN);
             }
+
             Dlog.d("SOCKET!! : " + apConnSocket);
         } catch (Exception e) {
             Dlog.e("SOCKET!! : " + apConnSocket);
@@ -488,50 +505,46 @@ public class MainActivity extends AppCompatActivity {
         return debuggable;
     }
 
-    public class GyroscopeListener implements SensorEventListener {
+    public class SensorListener implements SensorEventListener {
 
         @Override
         public void onSensorChanged(SensorEvent event) {
 
-        /* 각 축의 각속도 성분을 받는다. */
-            double gyroX = event.values[0];
-            double gyroY = event.values[1];
-            double gyroZ = event.values[2];
+            switch (event.sensor.getType()) {
 
-        /* 각속도를 적분하여 회전각을 추출하기 위해 적분 간격(dt)을 구한다.
-         * dt : 센서가 현재 상태를 감지하는 시간 간격
-         * NS2S : nano second -> second */
-            dt = (event.timestamp - timestamp) * NS2S;
-            timestamp = event.timestamp;
+                case Sensor.TYPE_GYROSCOPE:
+                    mGyroValues = event.values;
 
-        /* 맨 센서 인식을 활성화 하여 처음 timestamp가 0일때는 dt값이 올바르지 않으므로 넘어간다. */
-            if (dt - timestamp * NS2S != 0) {
+                    if (!gyroRunning) gyroRunning = true;
 
-            /* 각속도 성분을 적분 -> 회전각(pitch, roll)으로 변환.
-             * 여기까지의 pitch, roll의 단위는 '라디안'이다.
-             * SO 아래 로그 출력부분에서 멤버변수 'RAD2DGR'를 곱해주어 degree로 변환해줌.  */
-                pitch = pitch + gyroY * dt;
-                roll  = roll  + gyroX * dt;
-                yaw   = yaw   + gyroZ * dt;
+                    break;
 
-                ch1 = (int) (pitch * RAD2DGR);
-                ch2 = (int) (roll  * RAD2DGR);
+                case Sensor.TYPE_ACCELEROMETER:
+                    mAccValues = event.values;
 
-                textView1.setText("CH1 : " + String.valueOf(ch1));
-                textView2.setText("CH2 : " + String.valueOf(ch2));
+                    if (!accRunning) accRunning = true;
 
-            Dlog.d("GYROSCOPE     [X]    : " + String.format("%.4f", event.values[0])
-                    + "           [Y]    : " + String.format("%.4f", event.values[1])
-                    + "           [dt]   : " + String.format("%.4f", dt));
-//            Dlog.e("GYROSCOPE     [X]    : " + String.format("%.4f", event.values[0])
-//                    + "           [Y]    : " + String.format("%.4f", event.values[1])
-//                    + "           [Z]    : " + String.format("%.4f", event.values[2])
-//                    + "           [Pitch]: " + String.format("%.1f", pitch * RAD2DGR)
-//                    + "           [Roll] : " + String.format("%.1f", roll * RAD2DGR)
-//                    + "           [Yaw]  : " + String.format("%.1f", yaw * RAD2DGR)
-//                    + "           [dt]   : " + String.format("%.4f", dt));
-
+                    break;
             }
+
+            if (gyroRunning && accRunning) {
+                complementaty(event.timestamp);
+            }
+//            /* 각 축의 각속도 성분을 받는다. */
+//            float x = event.values[0];
+//            float y = event.values[1];
+//
+//            float filteredX = (float) mKalmanAccX.update(x);
+//            float filteredY = (float) mKalmanAccY.update(y);
+//
+//            ch1 = (int) (filteredX);
+//            ch2 = (int) (filteredY);
+//
+//            textView1.setText("CH1 : " + String.valueOf(ch1));
+//            textView2.setText("CH2 : " + String.valueOf(ch2));
+//
+//            Dlog.d("ACCELEROMETER [X] : " + String.format("%.4f", event.values[0])
+//                 + "              [Y] : " + String.format("%.4f", event.values[1]));
         }
 
         @Override
@@ -539,5 +552,67 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
+
+    /**
+     * 1차 상보필터 적용 메서드 */
+    private void complementaty(double new_ts){
+
+        /* 자이로랑 가속 해제 */
+        gyroRunning = false;
+        accRunning = false;
+
+        /*센서 값 첫 출력시 dt(=timestamp - event.timestamp)에 오차가 생기므로 처음엔 break */
+        if(timestamp == 0){
+            timestamp = new_ts;
+            return;
+        }
+        dt = (new_ts - timestamp) * NS2S; // ns->s 변환
+        timestamp = new_ts;
+
+        /* degree measure for accelerometer */
+        mAccPitch = -Math.atan2(mAccValues[0], mAccValues[2]) * 180.0 / Math.PI; // Y 축 기준
+        mAccRoll= Math.atan2(mAccValues[1], mAccValues[2]) * 180.0 / Math.PI; // X 축 기준
+
+        /**
+         * 1st complementary filter.
+         *  mGyroValuess : 각속도 성분.
+         *  mAccPitch : 가속도계를 통해 얻어낸 회전각.
+         */
+        temp = (1/a) * (mAccPitch - pitch) + mGyroValues[1];
+        pitch = pitch + (temp*dt);
+
+        temp = (1/a) * (mAccRoll - roll) + mGyroValues[0];
+        roll = roll + (temp*dt);
+
+        ch1 = (int) (roll);
+        ch2 = (int) (pitch);
+
+        textView1.setText("CH1 : " + String.valueOf(ch1));
+        textView2.setText("CH2 : " + String.valueOf(ch2));
+    }
+
+    Handler mHandler = new Handler() {
+        public void handleMessage(Message msg) {
+
+            try {
+                sockPrintWriter.println(":CHK:");
+            } catch (Exception e) {
+                Dlog.e("DATA SEND ERROR");
+                e.printStackTrace();
+                socketDisconnect();
+                mHandler.removeMessages(0);
+            }
+
+            if (apConnSocket != null && apConnSocket.isConnected()) {
+                tbWifi.setChecked(true);
+            } else {
+                Dlog.i("SOCKET!! : DisConnected");
+                tbWifi.setChecked(false);
+                socketDisconnect();
+            }
+
+            mHandler.sendEmptyMessageDelayed(0, 1000);
+        }
+    };
 }
 
