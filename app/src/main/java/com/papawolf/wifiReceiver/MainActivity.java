@@ -34,6 +34,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.Locale;
 
 import static android.os.StrictMode.setThreadPolicy;
 import static com.papawolf.wifiReceiver.R.drawable.image_button;
@@ -118,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                 if (tbWifi.isChecked()) {
                     try {
                         socketConnect();
-                        mHandler.sendEmptyMessage(0);
+                        //mHandler.sendEmptyMessage(0);
                     }
                     catch (Exception e) {
                         e.printStackTrace();
@@ -141,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     try {
                         socketDisconnect();
-                        mHandler.removeMessages(0);
+                        //mHandler.removeMessages(0);
                     }
                     catch (Exception e) {
                         e.printStackTrace();
@@ -220,6 +221,15 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         mSensorManager.unregisterListener(mSensorListener);
                         tbGyro.setTextColor(Color.RED);
+
+                        ch1 = 0;
+                        ch2 = 0;
+
+                        sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
+                        sendServer(sendMsg);
+
+                        textView1.setText("CH1 : " + String.valueOf(ch1));
+                        textView2.setText("CH2 : " + String.valueOf(ch2));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -258,9 +268,7 @@ public class MainActivity extends AppCompatActivity {
         js1.setStickAlpha(100);
         js1.setOffset(90);
         js1.setMinimumDistance(20);
-        js1.setMaximumDistance(300);
-
-
+        js1.setMaximumDistance(400);
 
         layout_joystick1.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg0, MotionEvent arg1) {
@@ -295,14 +303,13 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(100);
+                if (arg1.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(50);
+
+                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, arg1.getAction());
+                sendServer(sendMsg);
 
                 textView1.setText("CH1 : " + String.valueOf(ch1));
                 textView2.setText("CH2 : " + String.valueOf(ch2));
-
-                sendMsg = ":CH:" + ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
-                sendServer(sendMsg);
-
-                //Dlog.d(sendMsg);
 
                 return true;
             }
@@ -316,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
         js2.setStickAlpha(100);
         js2.setOffset(90);
         js2.setMinimumDistance(20);
-        js2.setMaximumDistance(300);
+        js2.setMaximumDistance(400);
 
         layout_joystick2.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg2, MotionEvent arg3) {
@@ -340,6 +347,8 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         ch4 = js2.getY();
                     }
+
+
                 }
                 else if(arg3.getAction() == MotionEvent.ACTION_UP) {
                     ch3 = 0;
@@ -347,11 +356,10 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (arg3.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(100);
+                if (arg3.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(50);
 
-                sendMsg = ":CH:" + ch1 + "|" + ch2 + "|" + ch3 + "|" + ch4;
+                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, arg3.getAction());
                 sendServer(sendMsg);
-
-                //Dlog.d(sendMsg);
 
                 textView3.setText("CH3 : " + String.valueOf(ch3));
                 textView4.setText("CH4 : " + String.valueOf(ch4));
@@ -367,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 sockPrintWriter.println(msg);
-                Dlog.i(sendMsg);
+                //Dlog.i(sendMsg);
             } catch (Exception e) {
                 Dlog.e("DATA SEND ERROR");
             }
@@ -433,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
         final int    serverPort    = Integer.parseInt(this.getApplication().getString(R.string.server_port));
         final int    serverTimeout = Integer.parseInt(this.getApplication().getString(R.string.server_timeout));
 
-        Dlog.d("SOCKET Connect start!!");
+        Dlog.i("SOCKET Connect start!!");
 
         SocketAddress socketAddress = new InetSocketAddress(serverIp, serverPort);
 
@@ -448,11 +456,17 @@ public class MainActivity extends AppCompatActivity {
             sockReader      = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
             sockPrintWriter = new PrintWriter(sockWriter, true);
 
-            Dlog.d("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
+            Dlog.i("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
+
+            sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", 0, 0, 0, 0, 5);
+            sendServer(sendMsg);
+
         } catch (SocketException e) {
+            Dlog.e("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
             e.printStackTrace();
             apConnSocket = null;
         } catch (IOException e) {
+            Dlog.e("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
             e.printStackTrace();
             apConnSocket = null;
         }
@@ -460,11 +474,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void socketDisconnect() {
         try {
+            sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", 0, 0, 0, 0, 6);
+            sendServer(sendMsg);
+
             if (apConnSocket != null) {
                 sendMsg = ":EXIT:";
                 sendServer(sendMsg);
-                apConnSocket.close();
-                apConnSocket = null;
+
                 sockWriter.close();
                 sockReader.close();
                 sockPrintWriter.close();
@@ -473,11 +489,14 @@ public class MainActivity extends AppCompatActivity {
                 sockReader = null;
                 sockPrintWriter = null;
 
+                apConnSocket.close();
+                apConnSocket = null;
+
                 tbWifi.setChecked(false);
                 tbWifi.setTextColor(Color.GREEN);
             }
 
-            Dlog.d("SOCKET!! : " + apConnSocket);
+            Dlog.i("SOCKET!! : " + apConnSocket);
         } catch (Exception e) {
             Dlog.e("SOCKET!! : " + apConnSocket);
             System.out.println(e);
@@ -530,21 +549,6 @@ public class MainActivity extends AppCompatActivity {
             if (gyroRunning && accRunning) {
                 complementaty(event.timestamp);
             }
-//            /* 각 축의 각속도 성분을 받는다. */
-//            float x = event.values[0];
-//            float y = event.values[1];
-//
-//            float filteredX = (float) mKalmanAccX.update(x);
-//            float filteredY = (float) mKalmanAccY.update(y);
-//
-//            ch1 = (int) (filteredX);
-//            ch2 = (int) (filteredY);
-//
-//            textView1.setText("CH1 : " + String.valueOf(ch1));
-//            textView2.setText("CH2 : " + String.valueOf(ch2));
-//
-//            Dlog.d("ACCELEROMETER [X] : " + String.format("%.4f", event.values[0])
-//                 + "              [Y] : " + String.format("%.4f", event.values[1]));
         }
 
         @Override
@@ -584,8 +588,19 @@ public class MainActivity extends AppCompatActivity {
         temp = (1/a) * (mAccRoll - roll) + mGyroValues[0];
         roll = roll + (temp*dt);
 
-        ch1 = (int) (roll);
-        ch2 = (int) (pitch);
+        if (roll >  40) roll =  40;
+        if (roll < -40) roll = -40;
+
+        if (pitch >  40) pitch =  40;
+        if (pitch < -40) pitch = -40;
+
+        ch1 = (int) Commom.map((long) ( roll * 10), -400, 400, -400, 400);
+        ch2 = (int) Commom.map((long) (pitch * 10), -400, 400, -400, 400) * (-1);
+
+        Dlog.i(String.format(Locale.US, "PITCH : %d ROLL : %d", ch1, ch2));
+
+        sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
+        sendServer(sendMsg);
 
         textView1.setText("CH1 : " + String.valueOf(ch1));
         textView2.setText("CH2 : " + String.valueOf(ch2));
