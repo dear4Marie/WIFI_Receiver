@@ -94,11 +94,10 @@
         android:id="@+id/toggleButtonGyro"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/textView4"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
         android:text="@string/gyro"
         android:textOff="@string/gyro_off"
-        android:textOn="@string/gyro_on" />
+        android:textOn="@string/gyro_on"
+        android:layout_alignTop="@+id/layout_joystick1"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>

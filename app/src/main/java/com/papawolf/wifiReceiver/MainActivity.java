@@ -3,6 +3,7 @@ package com.papawolf.wifiReceiver;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -17,6 +18,8 @@ import android.os.Message;
 import android.os.StrictMode;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -156,38 +159,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
-//        Thread threadWifiCheck = new Thread (new Runnable() {
-//            @Override
-//            public void run() {
-//                // UI 작업 수행 X
-//                mHandler.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        while (true) {
-//                            try {
-//                                if (apConnSocket != null && apConnSocket.isConnected()) {
-//                                    Dlog.i("SOCKET!! : " + apConnSocket);
-//                                    tbWifi.setChecked(true);
-//                                } else {
-//                                    Dlog.i("SOCKET!! : " + apConnSocket);
-//                                    tbWifi.setChecked(false);
-//                                }
-//
-//                                Thread.sleep(1000);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//                    }
-//                });
-//            }
-//        });
-
-//        threadWifiCheck.setPriority(Thread.MAX_PRIORITY);
-//        threadWifiCheck.setDaemon(true);
-//        threadWifiCheck.start();
-
         //Using the Gyroscope & Accelometer
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
@@ -238,16 +209,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-        // 세팅버튼을 누르면 세팅화면으로
-//        Button btSetting = (Button) findViewById(R.id.btSetting);
-//        btSetting.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick (View v) {
-//                Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
-//                startActivity(intent);
-//            }
-//        });
 
         // 진동서비스 설정
         final Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
@@ -367,6 +328,27 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.menu_setting:
+                Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
+                startActivity(intent);
+                return true;
+            case R.id.menu_finish:
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     // 소켓전송
