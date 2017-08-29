@@ -1,9 +1,11 @@
 package com.papawolf.wifiReceiver;
 
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -91,26 +93,29 @@ public class MainActivity extends AppCompatActivity {
     private boolean gyroRunning;
     private boolean accRunning;
 
-    private KalmanFilter mKalmanAccX;
-    private KalmanFilter mKalmanAccY;
+    private boolean isAppBackGround;
+    private static boolean isWindowFocused;
+
+    private ScreenActionReceiver mReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        if (isAppBackGround) {
+            isAppBackGround = false;
+        }
+
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(activity_main);
+
+        registerScreenStateReceiver();
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         setThreadPolicy(policy);
 
         // 디버그모드에 따라서 로그를 남기거나 남기지 않는다
         this.DEBUG = isDebuggable(this);
-
-        //칼만필터 초기화
-        mKalmanAccX = new KalmanFilter(0.0f);
-        mKalmanAccY = new KalmanFilter(0.0f);
-
 
         // WIFI 버튼으로 WIFI 처리
         tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
@@ -328,6 +333,37 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    @Override
+    protected void onStop(){
+        super.onStop();
+
+        if (isWindowFocused == false) {
+            isAppBackGround = true;
+            // TODO 자이로 정지, failSafe 상태로
+        }
+    }
+
+    @Override
+    protected  void onDestroy() {
+        super.onDestroy();
+
+        if (mReceiver != null) {
+            unregisterReceiver(mReceiver);
+        }
+    }
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        isWindowFocused = hasFocus;
+    }
+
+    private void registerScreenStateReceiver() {
+        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+
+        mReceiver = new ScreenActionReceiver();
+        registerReceiver(mReceiver, filter);
     }
 
     @Override
@@ -611,5 +647,19 @@ public class MainActivity extends AppCompatActivity {
             mHandler.sendEmptyMessageDelayed(0, 1000);
         }
     };
+
+    public class ScreenActionReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                // TODO 화면꺼짐처리
+            } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
+                // TODO 화면켜짐처리
+                if (isAppBackGround == false) {
+                    // TODO 화면켜짐처리
+                }
+            }
+        }
+    }
 }
 
