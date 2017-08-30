@@ -23,6 +23,9 @@ public class SettingActivity extends Activity {
 
     static final String[] LIST_MENU = {"Reverse", "EPA", "Trim"};
 
+    MainActivity mainActivity = new MainActivity();
+    WifiReceiver myApp = new WifiReceiver();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,26 +42,57 @@ public class SettingActivity extends Activity {
         listview = (ListView) findViewById(R.id.listViewReverse);
         listview.setAdapter(adapter);
 
+
+
         // 첫 번째 아이템 추가.
-        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_gamepad_black_18dp),
-                "Channel 1") ;
+        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_swap_horiz_black_18dp), getResources().getString(R.string.channel_1), myApp.isSettingReverseCh1()) ;
         // 두 번째 아이템 추가.
-        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_gamepad_black_18dp),
-                "Channel 2") ;
+        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_swap_horiz_black_18dp), getResources().getString(R.string.channel_2), myApp.isSettingReverseCh2()) ;
         // 세 번째 아이템 추가.
-        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_gamepad_black_18dp),
-                "Channel 3") ;
+        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_swap_horiz_black_18dp), getResources().getString(R.string.channel_3), myApp.isSettingReverseCh3()) ;
         // 세 번째 아이템 추가.
-        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_gamepad_black_18dp),
-                "Channel 4") ;
+        adapter.addItem(ContextCompat.getDrawable(this, R.drawable.ic_swap_horiz_black_18dp), getResources().getString(R.string.channel_4), myApp.isSettingReverseCh4()) ;
+
+        mainActivity.loadSetting(myApp);
+
+        Dlog.d("WifiReceiver " + myApp.isSettingReverseCh1());
+        Dlog.d("WifiReceiver " + myApp.isSettingReverseCh2());
+        Dlog.d("WifiReceiver " + myApp.isSettingReverseCh3());
+        Dlog.d("WifiReceiver " + myApp.isSettingReverseCh4());
+
+        listview.setItemChecked(0, myApp.isSettingReverseCh1());
+        listview.setItemChecked(1, myApp.isSettingReverseCh2());
+        listview.setItemChecked(2, myApp.isSettingReverseCh3());
+        listview.setItemChecked(3, myApp.isSettingReverseCh4());
 
         listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView parent, View v, int position, long id) {
-                Dlog.d("Item Click" + position + " " + id + " ");
+                Dlog.d("Item Click position -> " + position + " id -> " + id + " ");
 
                 CheckableLinearLayout cb = (CheckableLinearLayout) v;
-                Dlog.d("cb cb" + cb.isChecked());
+
+                // 체크된 리버스 채널 저장
+                switch (position) {
+                    case 0:
+                        myApp.setSettingReverseCh1(cb.isChecked());
+                        break;
+                    case 1:
+                        myApp.setSettingReverseCh2(cb.isChecked());
+                        break;
+                    case 2:
+                        myApp.setSettingReverseCh3(cb.isChecked());
+                        break;
+                    case 3:
+                        myApp.setSettingReverseCh4(cb.isChecked());
+                        break;
+                }
+                Dlog.d("WifiReceiver " + myApp.isSettingReverseCh1());
+                Dlog.d("WifiReceiver " + myApp.isSettingReverseCh2());
+                Dlog.d("WifiReceiver " + myApp.isSettingReverseCh3());
+                Dlog.d("WifiReceiver " + myApp.isSettingReverseCh4());
+
+                mainActivity.saveSetting(myApp);
             }
         });
 
@@ -166,4 +200,6 @@ public class SettingActivity extends Activity {
         listDataChild.put(listDataHeader.get(1), epa);
         listDataChild.put(listDataHeader.get(2), trim);
     }
+
+
 }

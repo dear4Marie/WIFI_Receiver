@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -39,8 +40,9 @@ public class CustomChoiceListViewAdapter extends BaseAdapter {
         }
 
         // 화면에 표시될 View(Layout이 inflate된)으로부터 위젯에 대한 참조 획득
-        ImageView iconImageView = (ImageView) convertView.findViewById(R.id.imageView1) ;
-        TextView textTextView = (TextView) convertView.findViewById(R.id.textView1) ;
+        ImageView iconImageView = (ImageView) convertView.findViewById(R.id.imageView1);
+        TextView textTextView = (TextView) convertView.findViewById(R.id.textView1);
+        CheckBox checkBox = (CheckBox) convertView.findViewById(R.id.checkBox1);
 
         // Data Set(listViewItemList)에서 position에 위치한 데이터 참조 획득
         ListViewItem listViewItem = listViewItemList.get(position);
@@ -48,6 +50,7 @@ public class CustomChoiceListViewAdapter extends BaseAdapter {
         // 아이템 내 각 위젯에 데이터 반영
         iconImageView.setImageDrawable(listViewItem.getIcon());
         textTextView.setText(listViewItem.getText());
+        checkBox.setChecked(false);
 
         return convertView;
     }
@@ -65,7 +68,7 @@ public class CustomChoiceListViewAdapter extends BaseAdapter {
     }
 
     // 아이템 데이터 추가를 위한 함수. 개발자가 원하는대로 작성 가능.
-    public void addItem(Drawable icon, String text) {
+    public void addItem(Drawable icon, String text, Boolean isChecked) {
         ListViewItem item = new ListViewItem();
 
         item.setIcon(icon);

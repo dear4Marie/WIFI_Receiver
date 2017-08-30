@@ -58,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
 
     public static boolean DEBUG = false;
 
+    public static Context mContext;
+
     RelativeLayout layout_joystick1;
     RelativeLayout layout_joystick2;
     TextView textView1, textView2, textView3, textView4;
@@ -109,6 +111,28 @@ public class MainActivity extends AppCompatActivity {
 
     private ToggleButton tbGyro;
 
+    // Shared Preferences
+    boolean settingReverseCh1;
+    boolean settingReverseCh2;
+    boolean settingReverseCh3;
+    boolean settingReverseCh4;
+
+    boolean settingAutoCenterCh1;
+    boolean settingAutoCenterCh2;
+    boolean settingAutoCenterCh3;
+    boolean settingAutoCenterCh4;
+
+    int     settingEpaCh1;
+    int     settingEpaCh2;
+    int     settingEpaCh3;
+    int     settingEpaCh4;
+
+    int     settingTrimCh1;
+    int     settingTrimCh2;
+    int     settingTrimCh3;
+    int     settingTrimCh4;
+
+    WifiReceiver myApp = new WifiReceiver();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +145,8 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(activity_main);
 
+        mContext = this;
+
         registerScreenStateReceiver();
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -128,6 +154,9 @@ public class MainActivity extends AppCompatActivity {
 
         // 디버그모드에 따라서 로그를 남기거나 남기지 않는다
         this.DEBUG = isDebuggable(this);
+
+        // 세팅값 불러오기
+        loadSetting(myApp);
 
         // WIFI 버튼으로 WIFI 처리
         tbWifi = (ToggleButton) this.findViewById(R.id.toggleButtonWifi);
@@ -635,8 +664,8 @@ public class MainActivity extends AppCompatActivity {
         if (pitch >  40) pitch =  40;
         if (pitch < -40) pitch = -40;
 
-        ch1 = (int) Commom.map((long) ( roll * 10), -400, 400, -400, 400);
-        ch2 = (int) Commom.map((long) (pitch * 10), -400, 400, -400, 400) * (-1);
+        ch1 = (int) Common.map((long) ( roll * 10), -400, 400, -400, 400);
+        ch2 = (int) Common.map((long) (pitch * 10), -400, 400, -400, 400) * (-1);
 
         Dlog.i(String.format(Locale.US, "PITCH : %d ROLL : %d", ch1, ch2));
 
@@ -685,6 +714,94 @@ public class MainActivity extends AppCompatActivity {
                 Dlog.i("ACTION_SCREEN_ON!");
             }
         }
+    }
+
+    public void loadSetting(WifiReceiver myApp) {
+
+        settingReverseCh1 = Common.getPreferencesBoolean(mContext, "reverseCh1");
+        settingReverseCh2 = Common.getPreferencesBoolean(mContext, "reverseCh2");
+        settingReverseCh3 = Common.getPreferencesBoolean(mContext, "reverseCh3");
+        settingReverseCh4 = Common.getPreferencesBoolean(mContext, "reverseCh4");
+
+        settingAutoCenterCh1 = Common.getPreferencesBoolean(mContext, "autoCenterCh1");
+        settingAutoCenterCh2 = Common.getPreferencesBoolean(mContext, "autoCenterCh2");
+        settingAutoCenterCh3 = Common.getPreferencesBoolean(mContext, "autoCenterCh3");
+        settingAutoCenterCh4 = Common.getPreferencesBoolean(mContext, "autoCenterCh4");
+
+        settingEpaCh1 = Common.getPreferencesInt(mContext, "epaCh1");
+        settingEpaCh2 = Common.getPreferencesInt(mContext, "epaCh2");
+        settingEpaCh3 = Common.getPreferencesInt(mContext, "epaCh3");
+        settingEpaCh4 = Common.getPreferencesInt(mContext, "epaCh4");
+
+        settingTrimCh1 = Common.getPreferencesInt(mContext, "trimCh1");
+        settingTrimCh2 = Common.getPreferencesInt(mContext, "trimCh2");
+        settingTrimCh3 = Common.getPreferencesInt(mContext, "trimCh3");
+        settingTrimCh4 = Common.getPreferencesInt(mContext, "trimCh4");
+
+        Dlog.i("Loading Setting Values!");
+
+        myApp.setSettingReverseCh1(settingReverseCh1);
+        myApp.setSettingReverseCh2(settingReverseCh2);
+        myApp.setSettingReverseCh3(settingReverseCh3);
+        myApp.setSettingReverseCh4(settingReverseCh4);
+
+        myApp.setSettingAutoCenterCh1(settingAutoCenterCh1);
+        myApp.setSettingAutoCenterCh2(settingAutoCenterCh2);
+        myApp.setSettingAutoCenterCh3(settingAutoCenterCh3);
+        myApp.setSettingAutoCenterCh4(settingAutoCenterCh4);
+
+        myApp.setSettingEpaCh1(settingEpaCh1);
+        myApp.setSettingEpaCh2(settingEpaCh2);
+        myApp.setSettingEpaCh3(settingEpaCh3);
+        myApp.setSettingEpaCh4(settingEpaCh4);
+
+        myApp.setSettingTrimCh1(settingTrimCh1);
+        myApp.setSettingTrimCh2(settingTrimCh2);
+        myApp.setSettingTrimCh3(settingTrimCh3);
+        myApp.setSettingTrimCh4(settingTrimCh4);
+    }
+
+    public void saveSetting(WifiReceiver myApp) {
+
+        settingReverseCh1 = myApp.isSettingReverseCh1();
+        settingReverseCh2 = myApp.isSettingReverseCh2();
+        settingReverseCh3 = myApp.isSettingReverseCh3();
+        settingReverseCh4 = myApp.isSettingReverseCh4();
+
+        settingAutoCenterCh1 = myApp.isSettingAutoCenterCh1();
+        settingAutoCenterCh2 = myApp.isSettingAutoCenterCh2();
+        settingAutoCenterCh3 = myApp.isSettingAutoCenterCh3();
+        settingAutoCenterCh4 = myApp.isSettingAutoCenterCh4();
+
+        settingEpaCh1 = myApp.getSettingEpaCh1();
+        settingEpaCh2 = myApp.getSettingEpaCh2();
+        settingEpaCh3 = myApp.getSettingEpaCh3();
+        settingEpaCh4 = myApp.getSettingEpaCh4();
+
+        settingTrimCh1 = myApp.getSettingTrimCh1();
+        settingTrimCh2 = myApp.getSettingTrimCh2();
+        settingTrimCh3 = myApp.getSettingTrimCh3();
+        settingTrimCh4 = myApp.getSettingTrimCh4();
+
+        Common.setPreferencesBoolean(mContext, "reverseCh1"   , settingReverseCh1   );
+        Common.setPreferencesBoolean(mContext, "reverseCh2"   , settingReverseCh2   );
+        Common.setPreferencesBoolean(mContext, "reverseCh3"   , settingReverseCh3   );
+        Common.setPreferencesBoolean(mContext, "reverseCh4"   , settingReverseCh4   );
+        Common.setPreferencesBoolean(mContext, "autoCenterCh1", settingAutoCenterCh1);
+        Common.setPreferencesBoolean(mContext, "autoCenterCh2", settingAutoCenterCh2);
+        Common.setPreferencesBoolean(mContext, "autoCenterCh3", settingAutoCenterCh3);
+        Common.setPreferencesBoolean(mContext, "autoCenterCh4", settingAutoCenterCh4);
+
+        Common.setPreferencesInt(mContext, "epaCh1" , settingEpaCh1 );
+        Common.setPreferencesInt(mContext, "epaCh2" , settingEpaCh2 );
+        Common.setPreferencesInt(mContext, "epaCh3" , settingEpaCh3 );
+        Common.setPreferencesInt(mContext, "epaCh4" , settingEpaCh4 );
+        Common.setPreferencesInt(mContext, "trimCh1", settingTrimCh1);
+        Common.setPreferencesInt(mContext, "trimCh2", settingTrimCh2);
+        Common.setPreferencesInt(mContext, "trimCh3", settingTrimCh3);
+        Common.setPreferencesInt(mContext, "trimCh4", settingTrimCh4);
+
+        Dlog.i("Saving Setting Values!");
     }
 }
 
