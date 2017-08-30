@@ -1,3 +1,12 @@
+/**************************************************************************************************/
+// MainActivity
+//
+// ESP12E RC WIFI Receiver Project
+//
+// Copyright Dong-Seok Shin
+/**************************************************************************************************/
+
+
 package com.papawolf.wifiReceiver;
 
 import android.app.AlertDialog;
@@ -98,6 +107,9 @@ public class MainActivity extends AppCompatActivity {
 
     private ScreenActionReceiver mReceiver;
 
+    private ToggleButton tbGyro;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -172,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         mSensorListener = new SensorListener();
 
         // GYTO 버튼으로 GyroScope 처리
-        final ToggleButton tbGyro = (ToggleButton) this.findViewById(R.id.toggleButtonGyro);
+        tbGyro = (ToggleButton) this.findViewById(R.id.toggleButtonGyro);
 
         tbGyro.setOnClickListener(new View.OnClickListener() {
 
@@ -191,26 +203,7 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 } else { // GyroScope 종료시
-
-                    Dlog.d("GyroscopeListener off");
-
-                    try {
-                        mSensorManager.unregisterListener(mSensorListener);
-                        tbGyro.setTextColor(Color.RED);
-
-                        ch1 = 0;
-                        ch2 = 0;
-
-                        sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
-                        sendServer(sendMsg);
-
-                        textView1.setText("CH1 : " + String.valueOf(ch1));
-                        textView2.setText("CH2 : " + String.valueOf(ch2));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-
+                    sensorStop();
                 }
             }
         });
@@ -341,7 +334,10 @@ public class MainActivity extends AppCompatActivity {
 
         if (isWindowFocused == false) {
             isAppBackGround = true;
-            // TODO 자이로 정지, failSafe 상태로
+
+            Dlog.i("onStop!");
+
+            sensorStop();
         }
     }
 
@@ -352,10 +348,16 @@ public class MainActivity extends AppCompatActivity {
         if (mReceiver != null) {
             unregisterReceiver(mReceiver);
         }
+
+        sensorStop();
+
+        Dlog.i("onDestroy!");
     }
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         isWindowFocused = hasFocus;
+
+        Dlog.i("onWindowFocusChanged! " + isWindowFocused);
     }
 
     private void registerScreenStateReceiver() {
@@ -364,6 +366,8 @@ public class MainActivity extends AppCompatActivity {
 
         mReceiver = new ScreenActionReceiver();
         registerReceiver(mReceiver, filter);
+
+        Dlog.i("registerScreenStateReceiver!");
     }
 
     @Override
@@ -512,6 +516,7 @@ public class MainActivity extends AppCompatActivity {
 
                 tbWifi.setChecked(false);
                 tbWifi.setTextColor(Color.GREEN);
+                tbWifi.setTextOff(getResources().getString(R.string.wifi_off));
             }
 
             Dlog.i("SOCKET!! : " + apConnSocket);
@@ -522,12 +527,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * get Debug mode
-     *
-     * @param context
-     * @return
-     */
     private boolean isDebuggable(Context context) {
         boolean debuggable = false;
 
@@ -575,6 +574,30 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // 자이로, 가속도 센서 정지
+    private void sensorStop() {
+
+        Dlog.d("GyroscopeListener off");
+
+        try {
+            mSensorManager.unregisterListener(mSensorListener);
+            tbGyro.setTextColor(Color.RED);
+            tbGyro.setTextOff(getResources().getString(R.string.gyro_off));
+            tbGyro.setChecked(false);
+
+            ch1 = 0;
+            ch2 = 0;
+
+            sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
+            sendServer(sendMsg);
+
+            textView1.setText("CH1 : " + String.valueOf(ch1));
+            textView2.setText("CH2 : " + String.valueOf(ch2));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
     /**
      * 1차 상보필터 적용 메서드 */
     private void complementaty(double new_ts){
@@ -652,12 +675,14 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
-                // TODO 화면꺼짐처리
+                Dlog.i("ACTION_SCREEN_OFF!");
+                sensorStop();
             } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
-                // TODO 화면켜짐처리
                 if (isAppBackGround == false) {
-                    // TODO 화면켜짐처리
+                    sensorStop();
                 }
+
+                Dlog.i("ACTION_SCREEN_ON!");
             }
         }
     }
