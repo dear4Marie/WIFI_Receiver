@@ -27,6 +27,8 @@ public class Common {
 
         editor.putInt(key, value);
         editor.commit();
+
+        Dlog.d(key + " -> " + value);
     }
 
     public static void setPreferencesBoolean(Context context, String key, Boolean value) {
@@ -46,7 +48,12 @@ public class Common {
 
     public static Integer getPreferencesInt(Context context, String key) {
         SharedPreferences p = context.getSharedPreferences("Setting", context.MODE_PRIVATE);
-        return p.getInt(key, 0);
+
+        int value = p.getInt(key, 0);
+
+        Dlog.d(key + " -> " + value);
+
+        return value;
     }
 
     public static Boolean getPreferencesBoolean(Context context, String key) {

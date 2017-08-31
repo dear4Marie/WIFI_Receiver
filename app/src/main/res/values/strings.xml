@@ -23,7 +23,12 @@
     <string name="channel_2">Channel 2</string>
     <string name="channel_3">Channel 3</string>
     <string name="channel_4">Channel 4</string>
-    <string name="end_point_adjust">End Point Adjust</string>
+    <string name="end_point_adjust">End Point Adjustment</string>
     <string name="reverse">Reverse</string>
+    <string name="title_activity_settings2">Settings</string>
+    <string name="title_activity_config">Settings</string>
+    <string name="auto_center">Auto Center</string>
+    <string name="_0">0</string>
+    <string name="trim">Trim</string>
 
 </resources>
