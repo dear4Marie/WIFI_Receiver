@@ -42,8 +42,10 @@ public class JoyStickClass {
     private Bitmap stick;
 
     private boolean touch_state = false;
+    private boolean auto_centerX = true;
+    private boolean auto_centerY = true;
 
-    public JoyStickClass(Context context, ViewGroup layout, int stick_res_id) {
+    public JoyStickClass(Context context, ViewGroup layout, int stick_res_id, boolean auto_centerX, boolean auto_centerY) {
         mContext = context;
 
         stick = BitmapFactory.decodeResource(mContext.getResources(),
@@ -56,14 +58,16 @@ public class JoyStickClass {
         paint = new Paint();
         mLayout = layout;
         params = mLayout.getLayoutParams();
+
+        Dlog.d("X :" + auto_centerX + "  Y : " + auto_centerY);
     }
 
-    public void drawStick(MotionEvent arg1) {
+    public void drawStick(MotionEvent arg1, boolean auto_centerX, boolean auto_centerY) {
+        Dlog.d("X :" + auto_centerX + "  Y : " + auto_centerY);
         position_x = (int) (arg1.getX() - (params.width / 2));
         position_y = (int) (arg1.getY() - (params.height / 2));
         distance = (float) Math.sqrt(Math.pow(position_x, 2) + Math.pow(position_y, 2));
         angle = (float) cal_angle(position_x, position_y);
-
 
         if(arg1.getAction() == MotionEvent.ACTION_DOWN) {
             if(distance <= (params.width / 2) - OFFSET) {
@@ -86,9 +90,54 @@ public class JoyStickClass {
                 mLayout.removeView(draw);
             }
         } else if(arg1.getAction() == MotionEvent.ACTION_UP) {
-            //mLayout.removeView(draw);
-            draw.position(params.width / 2, params.height / 2);
-            draw();
+            if (auto_centerX && auto_centerY) {                                                 // X, Y축 모두 자동센터링일때
+                //mLayout.removeView(draw);
+                draw.position(params.width / 2, params.height / 2);
+                draw();
+            } else if (auto_centerX && !auto_centerY) {                                        // X축만 자동센터링일때
+                if(distance <= (params.width / 2) - OFFSET) {
+                    draw.position(params.width / 2, arg1.getY());
+                    draw();
+                } else if(distance > (params.width / 2) - OFFSET){
+                    float x = (float) (Math.cos(Math.toRadians(cal_angle(position_x, position_y))) * ((params.width / 2) - OFFSET));
+                    float y = (float) (Math.sin(Math.toRadians(cal_angle(position_x, position_y))) * ((params.height / 2) - OFFSET));
+                    x += (params.width / 2);
+                    y += (params.height / 2);
+                    draw.position(params.width / 2, y);
+                    draw();
+                } else {
+                    mLayout.removeView(draw);
+                }
+            } else if (!auto_centerX && auto_centerY) {                                        // Y축만 자동센터링일때
+                if(distance <= (params.width / 2) - OFFSET) {
+                    draw.position(arg1.getX(), params.height / 2);
+                    draw();
+                } else if(distance > (params.width / 2) - OFFSET){
+                    float x = (float) (Math.cos(Math.toRadians(cal_angle(position_x, position_y))) * ((params.width / 2) - OFFSET));
+                    float y = (float) (Math.sin(Math.toRadians(cal_angle(position_x, position_y))) * ((params.height / 2) - OFFSET));
+                    x += (params.width / 2);
+                    y += (params.height / 2);
+                    draw.position(x, params.height / 2);
+                    draw();
+                } else {
+                    mLayout.removeView(draw);
+                }
+            } else {
+                if(distance <= (params.width / 2) - OFFSET) {
+                    draw.position(arg1.getX(), arg1.getY());
+                    draw();
+                } else if(distance > (params.width / 2) - OFFSET){
+                    float x = (float) (Math.cos(Math.toRadians(cal_angle(position_x, position_y))) * ((params.width / 2) - OFFSET));
+                    float y = (float) (Math.sin(Math.toRadians(cal_angle(position_x, position_y))) * ((params.height / 2) - OFFSET));
+                    x += (params.width / 2);
+                    y += (params.height / 2);
+                    draw.position(x, y);
+                    draw();
+                } else {
+                    mLayout.removeView(draw);
+                }
+            }
+
             touch_state = false;
         } else {
             draw.position(params.width / 2, params.height / 2);

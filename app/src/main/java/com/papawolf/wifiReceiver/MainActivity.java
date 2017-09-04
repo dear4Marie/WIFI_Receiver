@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
         layout_joystick2 = (RelativeLayout)findViewById(R.id.layout_joystick2);
 
         // 1번 조이스틱 설정
-        js1 = new JoyStickClass(getApplicationContext(), layout_joystick1, image_button);
+        js1 = new JoyStickClass(getApplicationContext(), layout_joystick1, image_button, myApp.isSettingAutoCenterCh1(), myApp.isSettingAutoCenterCh2());
         js1.setStickSize(200, 200);
         js1.setLayoutSize(800, 800);
         js1.setLayoutAlpha(50);
@@ -265,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                 if (tbGyro.isChecked()) {
                     js1.setStickAlpha(0);
                 } else {
-                    js1.drawStick(arg1);
+                    js1.drawStick(arg1, myApp.isSettingAutoCenterCh1(), myApp.isSettingAutoCenterCh2());
                     js1.setStickAlpha(100);
                 }
 
@@ -305,7 +305,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // 2번 조이스틱 설정
-        js2 = new JoyStickClass(getApplicationContext(), layout_joystick2, image_button);
+        js2 = new JoyStickClass(getApplicationContext(), layout_joystick2, image_button, myApp.isSettingAutoCenterCh3(), myApp.isSettingAutoCenterCh4());
         js2.setStickSize(200, 200);
         js2.setLayoutSize(800, 800);
         js2.setLayoutAlpha(150);
@@ -316,7 +316,7 @@ public class MainActivity extends AppCompatActivity {
 
         layout_joystick2.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg2, MotionEvent arg3) {
-                js2.drawStick(arg3);
+                js2.drawStick(arg3, myApp.isSettingAutoCenterCh3(), myApp.isSettingAutoCenterCh4());
 
                 if(arg3.getAction() == MotionEvent.ACTION_DOWN
                         || arg3.getAction() == MotionEvent.ACTION_MOVE) {
