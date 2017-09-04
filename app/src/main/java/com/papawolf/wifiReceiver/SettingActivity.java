@@ -1,9 +1,14 @@
 package com.papawolf.wifiReceiver;
 
-import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -11,7 +16,7 @@ import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-public class SettingActivity extends Activity {
+public class SettingActivity extends AppCompatActivity {
 
     MainActivity mainActivity = new MainActivity();
     WifiReceiver myApp = new WifiReceiver();
@@ -31,6 +36,11 @@ public class SettingActivity extends Activity {
 
         // 세팅값 불러오기
         mainActivity.loadSetting(myApp);
+
+        ActionBar actionBar = getSupportActionBar();
+
+        actionBar.setTitle(R.string.app_name);
+        actionBar.setSubtitle(R.string.setting);
 
         ListView listviewReverse, listviewAutoCenter;
         CustomChoiceListViewAdapter adapterReverse, adapterAutoCenter;
@@ -347,5 +357,28 @@ public class SettingActivity extends Activity {
                 mainActivity.saveSetting(myApp);
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_setting, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+
+        switch(item.getItemId()) {
+            case R.id.menu_main:
+                startActivity(intent);
+                return true;
+            case R.id.menu_finish:
+                ActivityCompat.finishAffinity(this);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }

@@ -21,12 +21,16 @@
         android:textAlignment="viewStart"
         android:textSize="16sp" />
 
-    <CheckBox
+    <Switch
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:id="@+id/checkBox1"
+        android:id="@+id/switch1"
         android:focusable="false"
         android:clickable="false"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:switchMinWidth="10dp"
+        android:layout_gravity="center"
+        android:paddingRight="10dp"
+        android:text=""/>
 
 </com.papawolf.wifiReceiver.CheckableLinearLayout>
