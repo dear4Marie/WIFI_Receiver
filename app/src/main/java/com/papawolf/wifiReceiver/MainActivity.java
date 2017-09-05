@@ -287,12 +287,36 @@ public class MainActivity extends AppCompatActivity {
                         ch2 = js1.getY();
                     }
                 } else if(arg1.getAction() == MotionEvent.ACTION_UP) {
-                    ch1 = 0;
-                    ch2 = 0;
+
+                    if (myApp.isSettingAutoCenterCh1()) {
+                        ch1 = 0;
+                    }
+
+                    if (myApp.isSettingAutoCenterCh2()) {
+                        ch2 = 0;
+                    }
                 }
 
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(100);
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(50);
+
+                // 리버스 케이스
+                if (myApp.isSettingReverseCh1()) ch1 = ch1 * (-1);
+                if (myApp.isSettingReverseCh2()) ch2 = ch2 * (-1);
+                if (myApp.isSettingReverseCh3()) ch3 = ch3 * (-1);
+                if (myApp.isSettingReverseCh4()) ch4 = ch4 * (-1);
+
+                // 트림 케이스
+                ch1 = ch1 + (myApp.getSettingTrimCh1());
+                ch2 = ch2 + (myApp.getSettingTrimCh2());
+                ch3 = ch3 + (myApp.getSettingTrimCh3());
+                ch4 = ch4 + (myApp.getSettingTrimCh4());
+
+                // EPA 케이스
+                ch1 = (int)((double)ch1 * (double)(myApp.getSettingEpaCh1() / 100.0));
+                ch2 = (int)((double)ch2 * (double)(myApp.getSettingEpaCh2() / 100.0));
+                ch3 = (int)((double)ch3 * (double)(myApp.getSettingEpaCh3() / 100.0));
+                ch4 = (int)((double)ch4 * (double)(myApp.getSettingEpaCh4() / 100.0));
 
                 sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, arg1.getAction());
                 sendServer(sendMsg);
@@ -340,12 +364,37 @@ public class MainActivity extends AppCompatActivity {
 
                 }
                 else if(arg3.getAction() == MotionEvent.ACTION_UP) {
-                    ch3 = 0;
-                    ch4 = 0;
+
+                    if (myApp.isSettingAutoCenterCh3()) {
+                        ch3 = 0;
+                    }
+
+                    if (myApp.isSettingAutoCenterCh4()) {
+                        ch4 = 0;
+                    }
                 }
 
                 if (arg3.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(100);
                 if (arg3.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(50);
+
+                // 리버스 케이스
+                if (myApp.isSettingReverseCh1()) ch1 = ch1 * (-1);
+                if (myApp.isSettingReverseCh2()) ch2 = ch2 * (-1);
+                if (myApp.isSettingReverseCh3()) ch3 = ch3 * (-1);
+                if (myApp.isSettingReverseCh4()) ch4 = ch4 * (-1);
+
+                // 트림 케이스
+                ch1 = ch1 + (myApp.getSettingTrimCh1());
+                ch2 = ch2 + (myApp.getSettingTrimCh2());
+                ch3 = ch3 + (myApp.getSettingTrimCh3());
+                ch4 = ch4 + (myApp.getSettingTrimCh4());
+
+                // EPA 케이스
+                ch1 = (int)((double)ch1 * (double)(myApp.getSettingEpaCh1() / 100.0));
+                ch2 = (int)((double)ch2 * (double)(myApp.getSettingEpaCh2() / 100.0));
+                ch3 = (int)((double)ch3 * (double)(myApp.getSettingEpaCh3() / 100.0));
+                ch4 = (int)((double)ch4 * (double)(myApp.getSettingEpaCh4() / 100.0));
+
 
                 sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, arg3.getAction());
                 sendServer(sendMsg);
