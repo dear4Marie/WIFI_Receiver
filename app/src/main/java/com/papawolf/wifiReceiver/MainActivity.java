@@ -80,6 +80,10 @@ public class MainActivity extends AppCompatActivity {
     int ch2 = 0;
     int ch3 = 0;
     int ch4 = 0;
+    int ch1Value = 0;
+    int ch2Value = 0;
+    int ch3Value = 0;
+    int ch4Value = 0;
 
     String sendMsg;
 
@@ -169,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
                 if (tbWifi.isChecked()) {
                     try {
                         socketConnect();
+                        //mHandler.removeMessages(0);
                         //mHandler.sendEmptyMessage(0);
                     }
                     catch (Exception e) {
@@ -182,8 +187,11 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), sendMsg + " 전송", Toast.LENGTH_SHORT).show();
 
                         tbWifi.setTextColor(Color.GREEN);
+                        tbWifi.setText(getResources().getText(R.string.wifi_on));
                     } else {
                         tbWifi.setChecked(false);
+                        tbWifi.setTextColor(Color.GRAY);
+                        tbWifi.setText(getResources().getText(R.string.wifi_off));
 
                         Toast.makeText(getApplicationContext(), getResources().getString(R.string.msg_conn_fail), Toast.LENGTH_SHORT).show();
                     }
@@ -191,15 +199,17 @@ public class MainActivity extends AppCompatActivity {
                 // WIFI 종료시
                 else {
                     try {
-                        socketDisconnect();
                         //mHandler.removeMessages(0);
+                        socketDisconnect();
                     }
                     catch (Exception e) {
                         e.printStackTrace();
                         Dlog.d("SOCKET!! : " + e);
                     }
 
-                    tbWifi.setTextColor(Color.RED);
+                    tbWifi.setChecked(false);
+                    tbWifi.setTextColor(Color.GRAY);
+                    tbWifi.setText(getResources().getText(R.string.wifi_off));
                 }
             }
 
@@ -301,28 +311,47 @@ public class MainActivity extends AppCompatActivity {
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(50);
 
                 // 리버스 케이스
-                if (myApp.isSettingReverseCh1()) ch1 = ch1 * (-1);
-                if (myApp.isSettingReverseCh2()) ch2 = ch2 * (-1);
-                if (myApp.isSettingReverseCh3()) ch3 = ch3 * (-1);
-                if (myApp.isSettingReverseCh4()) ch4 = ch4 * (-1);
+                if (myApp.isSettingReverseCh1()) {
+                    ch1Value = ch1 * (-1);
+                } else {
+                    ch1Value = ch1;
+                }
+
+                if (myApp.isSettingReverseCh2()) {
+                    ch2Value = ch2 * (-1);
+                } else {
+                    ch2Value = ch2;
+                }
+
+                if (myApp.isSettingReverseCh3()) {
+                    ch3Value = ch3 * (-1);
+                } else {
+                    ch3Value = ch3;
+                }
+
+                if (myApp.isSettingReverseCh4()) {
+                    ch4Value = ch4 * (-1);
+                } else {
+                    ch4Value = ch4;
+                }
 
                 // 트림 케이스
-                ch1 = ch1 + (myApp.getSettingTrimCh1());
-                ch2 = ch2 + (myApp.getSettingTrimCh2());
-                ch3 = ch3 + (myApp.getSettingTrimCh3());
-                ch4 = ch4 + (myApp.getSettingTrimCh4());
+                ch1Value = ch1Value + (myApp.getSettingTrimCh1());
+                ch2Value = ch2Value + (myApp.getSettingTrimCh2());
+                ch3Value = ch3Value + (myApp.getSettingTrimCh3());
+                ch4Value = ch4Value + (myApp.getSettingTrimCh4());
 
                 // EPA 케이스
-                ch1 = (int)((double)ch1 * (double)(myApp.getSettingEpaCh1() / 100.0));
-                ch2 = (int)((double)ch2 * (double)(myApp.getSettingEpaCh2() / 100.0));
-                ch3 = (int)((double)ch3 * (double)(myApp.getSettingEpaCh3() / 100.0));
-                ch4 = (int)((double)ch4 * (double)(myApp.getSettingEpaCh4() / 100.0));
+                ch1Value = (int)((double)ch1Value * (double)(myApp.getSettingEpaCh1() / 100.0));
+                ch2Value = (int)((double)ch2Value * (double)(myApp.getSettingEpaCh2() / 100.0));
+                ch3Value = (int)((double)ch3Value * (double)(myApp.getSettingEpaCh3() / 100.0));
+                ch4Value = (int)((double)ch4Value * (double)(myApp.getSettingEpaCh4() / 100.0));
 
-                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, arg1.getAction());
+                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1Value, ch2Value, ch3Value, ch4Value, arg1.getAction());
                 sendServer(sendMsg);
 
-                textView1.setText("CH1 : " + String.valueOf(ch1));
-                textView2.setText("CH2 : " + String.valueOf(ch2));
+                textView1.setText("CH1 : " + String.valueOf(ch1Value));
+                textView2.setText("CH2 : " + String.valueOf(ch2Value));
 
                 return true;
             }
@@ -360,8 +389,6 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         ch4 = js2.getY();
                     }
-
-
                 }
                 else if(arg3.getAction() == MotionEvent.ACTION_UP) {
 
@@ -378,29 +405,47 @@ public class MainActivity extends AppCompatActivity {
                 if (arg3.getAction() == MotionEvent.ACTION_DOWN)  vibrator.vibrate(50);
 
                 // 리버스 케이스
-                if (myApp.isSettingReverseCh1()) ch1 = ch1 * (-1);
-                if (myApp.isSettingReverseCh2()) ch2 = ch2 * (-1);
-                if (myApp.isSettingReverseCh3()) ch3 = ch3 * (-1);
-                if (myApp.isSettingReverseCh4()) ch4 = ch4 * (-1);
+                if (myApp.isSettingReverseCh1()) {
+                    ch1Value = ch1 * (-1);
+                } else {
+                    ch1Value = ch1;
+                }
+
+                if (myApp.isSettingReverseCh2()) {
+                    ch2Value = ch2 * (-1);
+                } else {
+                    ch2Value = ch2;
+                }
+
+                if (myApp.isSettingReverseCh3()) {
+                    ch3Value = ch3 * (-1);
+                } else {
+                    ch3Value = ch3;
+                }
+
+                if (myApp.isSettingReverseCh4()) {
+                    ch4Value = ch4 * (-1);
+                } else {
+                    ch4Value = ch4;
+                }
 
                 // 트림 케이스
-                ch1 = ch1 + (myApp.getSettingTrimCh1());
-                ch2 = ch2 + (myApp.getSettingTrimCh2());
-                ch3 = ch3 + (myApp.getSettingTrimCh3());
-                ch4 = ch4 + (myApp.getSettingTrimCh4());
+                ch1Value = ch1Value + (myApp.getSettingTrimCh1());
+                ch2Value = ch2Value + (myApp.getSettingTrimCh2());
+                ch3Value = ch3Value + (myApp.getSettingTrimCh3());
+                ch4Value = ch4Value + (myApp.getSettingTrimCh4());
 
                 // EPA 케이스
-                ch1 = (int)((double)ch1 * (double)(myApp.getSettingEpaCh1() / 100.0));
-                ch2 = (int)((double)ch2 * (double)(myApp.getSettingEpaCh2() / 100.0));
-                ch3 = (int)((double)ch3 * (double)(myApp.getSettingEpaCh3() / 100.0));
-                ch4 = (int)((double)ch4 * (double)(myApp.getSettingEpaCh4() / 100.0));
+                ch1Value = (int)((double)ch1Value * (double)(myApp.getSettingEpaCh1() / 100.0));
+                ch2Value = (int)((double)ch2Value * (double)(myApp.getSettingEpaCh2() / 100.0));
+                ch3Value = (int)((double)ch3Value * (double)(myApp.getSettingEpaCh3() / 100.0));
+                ch4Value = (int)((double)ch4Value * (double)(myApp.getSettingEpaCh4() / 100.0));
 
-
-                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, arg3.getAction());
+                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1Value, ch2Value, ch3Value, ch4Value, arg3.getAction());
                 sendServer(sendMsg);
 
-                textView3.setText("CH3 : " + String.valueOf(ch3));
-                textView4.setText("CH4 : " + String.valueOf(ch4));
+                textView3.setText("CH3 : " + String.valueOf(ch3Value));
+                textView4.setText("CH4 : " + String.valueOf(ch4Value));
 
                 return true;
             }
@@ -414,9 +459,10 @@ public class MainActivity extends AppCompatActivity {
         if (isWindowFocused == false) {
             isAppBackGround = true;
 
-            Dlog.i("onStop!");
-
             sensorStop();
+            socketDisconnect();
+
+            Dlog.i("onStop!");
         }
     }
 
@@ -429,6 +475,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         sensorStop();
+        socketDisconnect();
 
         Dlog.i("onDestroy!");
     }
@@ -471,7 +518,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 소켓전송
-    public void sendServer(String msg) {
+    public boolean sendServer(String msg) {
         if (apConnSocket != null && apConnSocket.isConnected()) {
 
             try {
@@ -479,8 +526,12 @@ public class MainActivity extends AppCompatActivity {
                 //Dlog.i(sendMsg);
             } catch (Exception e) {
                 Dlog.e("DATA SEND ERROR");
+                e.printStackTrace();
+                return false;
             }
         }
+
+        return  true;
     }
 
     private void SendMsgAlert()
@@ -563,10 +614,12 @@ public class MainActivity extends AppCompatActivity {
             sendServer(sendMsg);
 
         } catch (SocketException e) {
+            Toast.makeText(getApplicationContext(), "Connection Error", Toast.LENGTH_SHORT).show();
             Dlog.e("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
             e.printStackTrace();
             apConnSocket = null;
         } catch (IOException e) {
+            Toast.makeText(getApplicationContext(), "Connection Error", Toast.LENGTH_SHORT).show();
             Dlog.e("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
             e.printStackTrace();
             apConnSocket = null;
@@ -574,36 +627,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void socketDisconnect() {
+
+        sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", 0, 0, 0, 0, 6);
+        sendServer(sendMsg);
+
+        Dlog.i("SOCKET!! : " + apConnSocket);
+
         try {
-            sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", 0, 0, 0, 0, 6);
-            sendServer(sendMsg);
+            sockWriter.close();
+            sockReader.close();
+            sockPrintWriter.close();
 
-            if (apConnSocket != null) {
-                sendMsg = ":EXIT:";
-                sendServer(sendMsg);
+            sockWriter = null;
+            sockReader = null;
+            sockPrintWriter = null;
 
-                sockWriter.close();
-                sockReader.close();
-                sockPrintWriter.close();
-
-                sockWriter = null;
-                sockReader = null;
-                sockPrintWriter = null;
-
-                apConnSocket.close();
-                apConnSocket = null;
-
-                tbWifi.setChecked(false);
-                tbWifi.setTextColor(Color.GREEN);
-                tbWifi.setTextOff(getResources().getString(R.string.wifi_off));
-            }
-
-            Dlog.i("SOCKET!! : " + apConnSocket);
+            apConnSocket.close();
+            apConnSocket = null;
         } catch (Exception e) {
             Dlog.e("SOCKET!! : " + apConnSocket);
             System.out.println(e);
             e.printStackTrace();
         }
+
+        tbWifi.setChecked(false);
+        tbWifi.setTextColor(Color.GRAY);
+        tbWifi.setText(getResources().getText(R.string.wifi_off));
     }
 
     private boolean isDebuggable(Context context) {
@@ -719,6 +768,24 @@ public class MainActivity extends AppCompatActivity {
 
         Dlog.i(String.format(Locale.US, "PITCH : %d ROLL : %d", ch1, ch2));
 
+        // 리버스 케이스
+        if (myApp.isSettingReverseCh1()) ch1 = ch1 * (-1);
+        if (myApp.isSettingReverseCh2()) ch2 = ch2 * (-1);
+        if (myApp.isSettingReverseCh3()) ch3 = ch3 * (-1);
+        if (myApp.isSettingReverseCh4()) ch4 = ch4 * (-1);
+
+        // 트림 케이스
+        ch1 = ch1 + (myApp.getSettingTrimCh1());
+        ch2 = ch2 + (myApp.getSettingTrimCh2());
+        ch3 = ch3 + (myApp.getSettingTrimCh3());
+        ch4 = ch4 + (myApp.getSettingTrimCh4());
+
+        // EPA 케이스
+        ch1 = (int)((double)ch1 * (double)(myApp.getSettingEpaCh1() / 100.0));
+        ch2 = (int)((double)ch2 * (double)(myApp.getSettingEpaCh2() / 100.0));
+        ch3 = (int)((double)ch3 * (double)(myApp.getSettingEpaCh3() / 100.0));
+        ch4 = (int)((double)ch4 * (double)(myApp.getSettingEpaCh4() / 100.0));
+
         sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
         sendServer(sendMsg);
 
@@ -729,10 +796,13 @@ public class MainActivity extends AppCompatActivity {
     Handler mHandler = new Handler() {
         public void handleMessage(Message msg) {
 
+            Dlog.i("HANDLE MESSAGE!");
+
             try {
                 sockPrintWriter.println(":CHK:");
+                Dlog.i(sockReader.readLine());
             } catch (Exception e) {
-                Dlog.e("DATA SEND ERROR");
+                Dlog.e("ERROR");
                 e.printStackTrace();
                 socketDisconnect();
                 mHandler.removeMessages(0);
@@ -740,13 +810,17 @@ public class MainActivity extends AppCompatActivity {
 
             if (apConnSocket != null && apConnSocket.isConnected()) {
                 tbWifi.setChecked(true);
+                tbWifi.setTextColor(Color.GREEN);
+                tbWifi.setText(getResources().getText(R.string.wifi_on));
+                mHandler.sendEmptyMessageDelayed(0, 2000);
             } else {
                 Dlog.i("SOCKET!! : DisConnected");
                 tbWifi.setChecked(false);
+                tbWifi.setTextColor(Color.RED);
+                tbWifi.setText(getResources().getText(R.string.wifi_off));
                 socketDisconnect();
+                mHandler.removeMessages(0);
             }
-
-            mHandler.sendEmptyMessageDelayed(0, 1000);
         }
     };
 
