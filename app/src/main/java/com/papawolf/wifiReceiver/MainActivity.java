@@ -42,12 +42,10 @@ import android.widget.ToggleButton;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Locale;
 
@@ -70,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
 
     ToggleButton tbWifi;
 
-    Socket         apConnSocket = null;
+    DatagramSocket apConnSocket = null;
     BufferedReader sockReader;
     BufferedWriter sockWriter;
     PrintWriter    sockPrintWriter;
@@ -127,6 +125,8 @@ public class MainActivity extends AppCompatActivity {
     boolean settingAutoCenterCh3;
     boolean settingAutoCenterCh4;
 
+    boolean isConnected = false;
+
     int     settingEpaCh1;
     int     settingEpaCh2;
     int     settingEpaCh3;
@@ -138,6 +138,11 @@ public class MainActivity extends AppCompatActivity {
     int     settingTrimCh4;
 
     WifiReceiver myApp = new WifiReceiver();
+    Context context = this;
+
+    String serverIp        = "";
+    int    serverPort     = 0;
+    int    serverTimeout  = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,6 +161,10 @@ public class MainActivity extends AppCompatActivity {
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         setThreadPolicy(policy);
+
+        serverIp        = context.getApplicationContext().getString(R.string.server_ip);
+        serverPort     = Integer.parseInt(context.getApplicationContext().getString(R.string.server_port));
+        serverTimeout  = Integer.parseInt(context.getApplicationContext().getString(R.string.server_timeout));
 
         // 디버그모드에 따라서 로그를 남기거나 남기지 않는다
         this.DEBUG = isDebuggable(this);
@@ -181,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     Dlog.d("SOCKET!! : " + apConnSocket);
 
-                    if (apConnSocket != null && apConnSocket.isConnected()) {
+                    if (isConnected) {
                         sendMsg = getResources().getString(R.string.msg_conn_succ);
                         sendServer(sendMsg);
                         Toast.makeText(getApplicationContext(), sendMsg + " 전송", Toast.LENGTH_SHORT).show();
@@ -519,10 +528,16 @@ public class MainActivity extends AppCompatActivity {
 
     // 소켓전송
     public boolean sendServer(String msg) {
-        if (apConnSocket != null && apConnSocket.isConnected()) {
+        if (isConnected) {
 
             try {
-                sockPrintWriter.println(msg);
+                byte[] buf = msg.getBytes();
+
+                DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(serverIp), serverPort);
+
+                apConnSocket.send(p);
+
+                //sockPrintWriter.println(msg);
                 //Dlog.i(sendMsg);
             } catch (Exception e) {
                 Dlog.e("DATA SEND ERROR");
@@ -543,13 +558,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                if (apConnSocket.isConnected()) {
-                    try {
-                        apConnSocket.close();
-                    } catch (IOException ioe) {
-
-                    }
-                }
                 moveTaskToBack(true);
                 finish();
                 android.os.Process.killProcess(android.os.Process.myPid());
@@ -589,40 +597,34 @@ public class MainActivity extends AppCompatActivity {
 
     private void socketConnect() {
 
-        final String serverIp      = this.getApplication().getString(R.string.server_ip);
-        final int    serverPort    = Integer.parseInt(this.getApplication().getString(R.string.server_port));
-        final int    serverTimeout = Integer.parseInt(this.getApplication().getString(R.string.server_timeout));
-
         Dlog.i("SOCKET Connect start!!");
 
-        SocketAddress socketAddress = new InetSocketAddress(serverIp, serverPort);
-
-        apConnSocket = new Socket();
-
         try {
-            //apConnSocket = new Socket(serverIp, serverPort);
-            apConnSocket.setSoTimeout(serverTimeout);
-            apConnSocket.connect(socketAddress, serverTimeout);
+            InetAddress ip = InetAddress.getByName(serverIp);
 
-            sockWriter      = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
-            sockReader      = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
-            sockPrintWriter = new PrintWriter(sockWriter, true);
+            apConnSocket = new DatagramSocket();
+            apConnSocket.setSoTimeout(serverTimeout);
+
+            //sockWriter      = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
+            //sockReader      = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
+            //sockPrintWriter = new PrintWriter(sockWriter, true);
 
             Dlog.i("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
 
             sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", 0, 0, 0, 0, 5);
             sendServer(sendMsg);
+            isConnected = true;
 
         } catch (SocketException e) {
             Toast.makeText(getApplicationContext(), "Connection Error", Toast.LENGTH_SHORT).show();
             Dlog.e("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
             e.printStackTrace();
-            apConnSocket = null;
+            isConnected = false;
         } catch (IOException e) {
             Toast.makeText(getApplicationContext(), "Connection Error", Toast.LENGTH_SHORT).show();
             Dlog.e("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
             e.printStackTrace();
-            apConnSocket = null;
+            isConnected = false;
         }
     }
 
@@ -634,6 +636,8 @@ public class MainActivity extends AppCompatActivity {
         Dlog.i("SOCKET!! : " + apConnSocket);
 
         try {
+            isConnected = false;
+
             sockWriter.close();
             sockReader.close();
             sockPrintWriter.close();
@@ -808,7 +812,7 @@ public class MainActivity extends AppCompatActivity {
                 mHandler.removeMessages(0);
             }
 
-            if (apConnSocket != null && apConnSocket.isConnected()) {
+            if (isConnected) {
                 tbWifi.setChecked(true);
                 tbWifi.setTextColor(Color.GREEN);
                 tbWifi.setText(getResources().getText(R.string.wifi_on));
