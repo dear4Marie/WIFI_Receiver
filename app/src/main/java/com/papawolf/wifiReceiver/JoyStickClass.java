@@ -63,29 +63,48 @@ public class JoyStickClass {
     }
 
     public void drawStick(MotionEvent arg1, boolean auto_centerX, boolean auto_centerY) {
-        Dlog.d("X :" + auto_centerX + "  Y : " + auto_centerY);
+
         position_x = (int) (arg1.getX() - (params.width / 2));
         position_y = (int) (arg1.getY() - (params.height / 2));
         distance = (float) Math.sqrt(Math.pow(position_x, 2) + Math.pow(position_y, 2));
         angle = (float) cal_angle(position_x, position_y);
 
+        //Dlog.d("X :" + position_x + "  Y : " + position_y);
+
         if(arg1.getAction() == MotionEvent.ACTION_DOWN) {
-            if(distance <= (params.width / 2) - OFFSET) {
+            if((Math.abs(position_x) <= (params.width / 2) - OFFSET) && (Math.abs(position_y) <= (params.height / 2) - OFFSET)) {
                 draw.position(arg1.getX(), arg1.getY());
                 draw();
                 touch_state = true;
             }
         } else if(arg1.getAction() == MotionEvent.ACTION_MOVE && touch_state) {
-            if(distance <= (params.width / 2) - OFFSET) {
+            if((Math.abs(position_x) <= (params.width / 2) - OFFSET) && (Math.abs(position_y) <= (params.height / 2) - OFFSET)) {
                 draw.position(arg1.getX(), arg1.getY());
                 draw();
-            } else if(distance > (params.width / 2) - OFFSET){
-                float x = (float) (Math.cos(Math.toRadians(cal_angle(position_x, position_y))) * ((params.width / 2) - OFFSET));
-                float y = (float) (Math.sin(Math.toRadians(cal_angle(position_x, position_y))) * ((params.height / 2) - OFFSET));
-                x += (params.width / 2);
-                y += (params.height / 2);
+            } else if((Math.abs(position_x) > (params.width / 2) - OFFSET) && (Math.abs(position_y) <= (params.height / 2) - OFFSET)) {
+                float x = (position_x > 0) ? params.width - OFFSET : OFFSET;
+                float y = arg1.getY();
                 draw.position(x, y);
                 draw();
+                Dlog.d("X :" + x + "  Y : " + y);
+            } else if((Math.abs(position_x) <= (params.width / 2) - OFFSET) && (Math.abs(position_y) > (params.height / 2) - OFFSET)) {
+                float x = arg1.getX();
+                float y = (position_y > 0) ? params.height - OFFSET : OFFSET;
+                draw.position(x, y);
+                draw();
+                Dlog.d("X :" + x + "  Y : " + y);
+            } else if((Math.abs(position_x) > (params.width / 2) - OFFSET) && (Math.abs(position_y) > (params.height / 2) - OFFSET)) {
+                float x = (position_x > 0) ? params.width - OFFSET : OFFSET;
+                float y = (position_y > 0) ? params.height - OFFSET : OFFSET;
+                draw.position(x, y);
+                draw();
+//            } else if(distance > (params.width / 2) - OFFSET){
+//                float x = (float) (Math.cos(Math.toRadians(cal_angle(position_x, position_y))) * ((params.width / 2) - OFFSET));
+//                float y = (float) (Math.sin(Math.toRadians(cal_angle(position_x, position_y))) * ((params.height / 2) - OFFSET));
+//                x += (params.width / 2);
+//                y += (params.height / 2);
+//                draw.position(x, y);
+//                draw();
             } else {
                 mLayout.removeView(draw);
             }

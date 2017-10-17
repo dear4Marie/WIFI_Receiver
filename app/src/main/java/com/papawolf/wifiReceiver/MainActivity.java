@@ -181,9 +181,10 @@ public class MainActivity extends AppCompatActivity {
                 // WIFI 연결시
                 if (tbWifi.isChecked()) {
                     try {
-                        socketConnect();
                         //mHandler.removeMessages(0);
                         //mHandler.sendEmptyMessage(0);
+                        startSendPacketThread();
+                        socketConnect();
                     }
                     catch (Exception e) {
                         e.printStackTrace();
@@ -209,6 +210,7 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     try {
                         //mHandler.removeMessages(0);
+                        stopSendPacketThread();
                         socketDisconnect();
                     }
                     catch (Exception e) {
@@ -356,8 +358,8 @@ public class MainActivity extends AppCompatActivity {
                 ch3Value = (int)((double)ch3Value * (double)(myApp.getSettingEpaCh3() / 100.0));
                 ch4Value = (int)((double)ch4Value * (double)(myApp.getSettingEpaCh4() / 100.0));
 
-                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1Value, ch2Value, ch3Value, ch4Value, arg1.getAction());
-                sendServer(sendMsg);
+                //sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1Value, ch2Value, ch3Value, ch4Value, arg1.getAction());
+                //sendServer(sendMsg);
 
                 textView1.setText("CH1 : " + String.valueOf(ch1Value));
                 textView2.setText("CH2 : " + String.valueOf(ch2Value));
@@ -450,8 +452,8 @@ public class MainActivity extends AppCompatActivity {
                 ch3Value = (int)((double)ch3Value * (double)(myApp.getSettingEpaCh3() / 100.0));
                 ch4Value = (int)((double)ch4Value * (double)(myApp.getSettingEpaCh4() / 100.0));
 
-                sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1Value, ch2Value, ch3Value, ch4Value, arg3.getAction());
-                sendServer(sendMsg);
+                //sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1Value, ch2Value, ch3Value, ch4Value, arg3.getAction());
+                //sendServer(sendMsg);
 
                 textView3.setText("CH3 : " + String.valueOf(ch3Value));
                 textView4.setText("CH4 : " + String.valueOf(ch4Value));
@@ -570,31 +572,6 @@ public class MainActivity extends AppCompatActivity {
         alert.show();
     }
 
-    // 소켓연결
-//    class SocketThread extends Thread {
-//        @Override
-//        public void run() {
-//
-//            try {
-//                apConnSocket = new Socket(ipaddr, ipport);
-//
-//                sockWriter = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
-//                sockReader = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
-//                sockPrintWriter = new PrintWriter(sockWriter, true);
-//
-//                Dlog.d("SOCKET!! : " + apConnSocket);
-//            } catch (UnknownHostException ue) {
-//                Dlog.d("SOCKET!! : " + apConnSocket);
-//                System.out.println(ue);
-//                ue.printStackTrace();
-//            } catch (IOException ie) {
-//                Dlog.d("SOCKET!! : " + apConnSocket);
-//                System.out.println(ie);
-//                ie.printStackTrace();
-//            }
-//        }
-//    }
-
     private void socketConnect() {
 
         Dlog.i("SOCKET Connect start!!");
@@ -605,15 +582,10 @@ public class MainActivity extends AppCompatActivity {
             apConnSocket = new DatagramSocket();
             apConnSocket.setSoTimeout(serverTimeout);
 
-            //sockWriter      = new BufferedWriter(new OutputStreamWriter(apConnSocket.getOutputStream(), "EUC-KR"));
-            //sockReader      = new BufferedReader(new InputStreamReader(apConnSocket.getInputStream()));
-            //sockPrintWriter = new PrintWriter(sockWriter, true);
-
-            Dlog.i("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
+            isConnected = true;
 
             sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", 0, 0, 0, 0, 5);
             sendServer(sendMsg);
-            isConnected = true;
 
         } catch (SocketException e) {
             Toast.makeText(getApplicationContext(), "Connection Error", Toast.LENGTH_SHORT).show();
@@ -635,24 +607,7 @@ public class MainActivity extends AppCompatActivity {
 
         Dlog.i("SOCKET!! : " + apConnSocket);
 
-        try {
-            isConnected = false;
-
-            sockWriter.close();
-            sockReader.close();
-            sockPrintWriter.close();
-
-            sockWriter = null;
-            sockReader = null;
-            sockPrintWriter = null;
-
-            apConnSocket.close();
-            apConnSocket = null;
-        } catch (Exception e) {
-            Dlog.e("SOCKET!! : " + apConnSocket);
-            System.out.println(e);
-            e.printStackTrace();
-        }
+        isConnected = false;
 
         tbWifi.setChecked(false);
         tbWifi.setTextColor(Color.GRAY);
@@ -671,6 +626,55 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return debuggable;
+    }
+
+    public void startSendPacketThread() {
+        SendPacket sendPacket = new SendPacket();
+
+        //sendPacket.setDaemon(true);
+        sendPacket.start();
+
+        Dlog.d("THREAD START!!");
+    }
+
+    public void stopSendPacketThread() {
+        SendPacket sendPacket = new SendPacket();
+
+        //sendPacket.setDaemon(false);
+        sendPacket.setRun(false);
+
+        Dlog.d("THREAD STOP!!");
+    }
+
+    public  class SendPacket extends Thread {
+
+        private volatile boolean isRun = true;
+
+        public void setRun(boolean isRun) {
+            this.isRun = isRun;
+        }
+
+        @Override
+        public void run() {
+            try {
+                Dlog.d("THREAD RUN!!");
+
+                while (isRun) {
+                    sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1Value, ch2Value, ch3Value, ch4Value, 1);
+                    sendServer(sendMsg);
+
+                    try {
+                        Thread.sleep(50);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public class SensorListener implements SensorEventListener {
@@ -720,8 +724,8 @@ public class MainActivity extends AppCompatActivity {
             ch1 = 0;
             ch2 = 0;
 
-            sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
-            sendServer(sendMsg);
+            //sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
+            //sendServer(sendMsg);
 
             textView1.setText("CH1 : " + String.valueOf(ch1));
             textView2.setText("CH2 : " + String.valueOf(ch2));
@@ -785,16 +789,16 @@ public class MainActivity extends AppCompatActivity {
         ch4 = ch4 + (myApp.getSettingTrimCh4());
 
         // EPA 케이스
-        ch1 = (int)((double)ch1 * (double)(myApp.getSettingEpaCh1() / 100.0));
-        ch2 = (int)((double)ch2 * (double)(myApp.getSettingEpaCh2() / 100.0));
-        ch3 = (int)((double)ch3 * (double)(myApp.getSettingEpaCh3() / 100.0));
-        ch4 = (int)((double)ch4 * (double)(myApp.getSettingEpaCh4() / 100.0));
+        ch1Value = (int)((double)ch1 * (double)(myApp.getSettingEpaCh1() / 100.0));
+        ch2Value = (int)((double)ch2 * (double)(myApp.getSettingEpaCh2() / 100.0));
+        ch3Value = (int)((double)ch3 * (double)(myApp.getSettingEpaCh3() / 100.0));
+        ch4Value = (int)((double)ch4 * (double)(myApp.getSettingEpaCh4() / 100.0));
 
-        sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
-        sendServer(sendMsg);
+        //sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", ch1, ch2, ch3, ch4, 9);
+        //sendServer(sendMsg);
 
-        textView1.setText("CH1 : " + String.valueOf(ch1));
-        textView2.setText("CH2 : " + String.valueOf(ch2));
+        textView1.setText("CH1 : " + String.valueOf(ch1Value));
+        textView2.setText("CH2 : " + String.valueOf(ch2Value));
     }
 
     Handler mHandler = new Handler() {
