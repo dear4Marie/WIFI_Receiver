@@ -183,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         //mHandler.removeMessages(0);
                         //mHandler.sendEmptyMessage(0);
-                        startSendPacketThread();
                         socketConnect();
                     }
                     catch (Exception e) {
@@ -210,7 +209,6 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     try {
                         //mHandler.removeMessages(0);
-                        stopSendPacketThread();
                         socketDisconnect();
                     }
                     catch (Exception e) {
@@ -587,6 +585,8 @@ public class MainActivity extends AppCompatActivity {
             sendMsg = String.format(Locale.US, ":CH:%04d|%04d|%04d|%04d|%d", 0, 0, 0, 0, 5);
             sendServer(sendMsg);
 
+            startSendPacketThread();
+
         } catch (SocketException e) {
             Toast.makeText(getApplicationContext(), "Connection Error", Toast.LENGTH_SHORT).show();
             Dlog.e("SOCKET!! : " + apConnSocket + " " + apConnSocket.isConnected());
@@ -608,6 +608,8 @@ public class MainActivity extends AppCompatActivity {
         Dlog.i("SOCKET!! : " + apConnSocket);
 
         isConnected = false;
+
+        stopSendPacketThread();
 
         tbWifi.setChecked(false);
         tbWifi.setTextColor(Color.GRAY);
@@ -838,9 +840,11 @@ public class MainActivity extends AppCompatActivity {
             if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
                 Dlog.i("ACTION_SCREEN_OFF!");
                 sensorStop();
+                socketDisconnect();
             } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
                 if (isAppBackGround == false) {
                     sensorStop();
+                    socketDisconnect();
                 }
 
                 Dlog.i("ACTION_SCREEN_ON!");
